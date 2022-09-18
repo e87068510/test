@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resourse>
+    <usb-device vendor-id="1204" product-id="241"/>
+
+    <!-- Below is not the correct vendor id -->
+    <usb-device vendor-id="1003" product-id="241"/>
+    <usb-device vendor-id="1007" product-id="241"/>
+</resourse>

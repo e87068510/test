@@ -187,16 +187,16 @@ public class USChartActivity extends AppCompatActivity {
         M_modeSeekBar = (SeekBar) findViewById(R.id.M_modeContrastSeekBar);
 
         //發射頻率調整介面
-        radioGroup = (RadioGroup)findViewById(R.id.radio_group);
-        RadioButton radioButton1 = (RadioButton) findViewById(R.id.radioButton1);
-        RadioButton radioButton2 = (RadioButton) findViewById(R.id.radioButton2);
-        RadioButton radioButton3 = (RadioButton) findViewById(R.id.radioButton3);
-        RadioButton radioButton4 = (RadioButton) findViewById(R.id.radioButton4);
-        radioGroup.setOnCheckedChangeListener(listener);
+//        radioGroup = (RadioGroup)findViewById(R.id.radio_group);
+//        RadioButton radioButton1 = (RadioButton) findViewById(R.id.radioButton1);
+//        RadioButton radioButton2 = (RadioButton) findViewById(R.id.radioButton2);
+//        RadioButton radioButton3 = (RadioButton) findViewById(R.id.radioButton3);
+//        RadioButton radioButton4 = (RadioButton) findViewById(R.id.radioButton4);
+//        radioGroup.setOnCheckedChangeListener(listener);
         dataSend = new byte[2];
-        data = new byte[2];//test
         dataSend[0] = 0x00;
-        radioGroup.check(R.id.radioButton3);
+        dataSend[1] = 0X25; // 初始設定成20MHZ
+//        radioGroup.check(R.id.radioButton3);
 
         //截圖按鈕
         ScreenShot=(Button) findViewById(R.id.Screenshotbutton);
@@ -1170,37 +1170,37 @@ public class USChartActivity extends AppCompatActivity {
     };
 
     //發射頻率指令設定
-    private RadioGroup.OnCheckedChangeListener listener = new RadioGroup.OnCheckedChangeListener() {
-
-        @Override
-        public void onCheckedChanged(RadioGroup group, int checkedId) {
-            // TODO Auto-generated method stub
-            switch (checkedId) {
-                case R.id.radioButton1:
-
-                    dataSend[1] = 0x23;
-                    is5MHz = true;
-                    break;
-                case R.id.radioButton2:
-
-                    dataSend[1] = 0x24;
-                    //dataSend[1] = 0x11;
-                    is5MHz = true;
-                    break;
-                case R.id.radioButton3:
-
-                    dataSend[1] = 0x25;
-                    is5MHz = false;
-                    break;
-                case R.id.radioButton4:
-
-                    dataSend[1] = 0x26;
-                    is5MHz = false;
-                    break;
-            }
-        }
-
-    };
+//    private RadioGroup.OnCheckedChangeListener listener = new RadioGroup.OnCheckedChangeListener() {
+//
+//        @Override
+//        public void onCheckedChanged(RadioGroup group, int checkedId) {
+//            // TODO Auto-generated method stub
+//            switch (checkedId) {
+//                case R.id.radioButton1:
+//
+//                    dataSend[1] = 0x23;
+//                    is5MHz = true;
+//                    break;
+//                case R.id.radioButton2:
+//
+//                    dataSend[1] = 0x24;
+//                    //dataSend[1] = 0x11;
+//                    is5MHz = true;
+//                    break;
+//                case R.id.radioButton3:
+//
+//                    dataSend[1] = 0x25;
+//                    is5MHz = false;
+//                    break;
+//                case R.id.radioButton4:
+//
+//                    dataSend[1] = 0x26;
+//                    is5MHz = false;
+//                    break;
+//            }
+//        }
+//
+//    };
 
     //TGC調整指令設定
     private void TGCsetup(){

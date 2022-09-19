@@ -194,6 +194,7 @@ public class USChartActivity extends AppCompatActivity {
         RadioButton radioButton4 = (RadioButton) findViewById(R.id.radioButton4);
         radioGroup.setOnCheckedChangeListener(listener);
         dataSend = new byte[2];
+        data = new byte[2];//test
         dataSend[0] = 0x00;
         radioGroup.check(R.id.radioButton3);
 

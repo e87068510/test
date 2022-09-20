@@ -90,7 +90,7 @@ public class USChartActivity extends AppCompatActivity {
     boolean isRunning = false;
     boolean isDataProcessRunning = false;
     boolean isRecord = false;
-    boolean is5MHz = false;
+    boolean isSingleSave = false;
     BlockingQueue<byte[]> UsbReceivedFiFOQueue = new LinkedBlockingQueue<byte[]>(Integer.MAX_VALUE); //USB data Queue
     BlockingQueue<double[]> RF_modeFiFOQueue = new LinkedBlockingQueue<double[]>(Integer.MAX_VALUE); //RF-mode data Queue
     BlockingQueue<int[]> M_modeFiFOQueue = new LinkedBlockingQueue<int[]>(Integer.MAX_VALUE);//Every //M-mode data Queue
@@ -108,7 +108,7 @@ public class USChartActivity extends AppCompatActivity {
 
     private DataSaveToFile dataSaveToFile;
     private DataSaveToFile imageSaveToFile;
-//    private double[] SaveRawData = new double[dataSize];
+    private double[] SaveRawData = new double[dataSize];
     private LineChart mChart;
     private ImageView M_modeImage, NeedleTipPosition;
     private Button TuohyNeedleTip, StraightNeedleTip;
@@ -144,11 +144,14 @@ public class USChartActivity extends AppCompatActivity {
     private Button M_modeDisplayButton;
     private Button dataSaveButton;
     AtomicBoolean RecordOn = new AtomicBoolean(false);
-//    AtomicBoolean RF_modeOn = new AtomicBoolean(true);
+    AtomicBoolean SingleRecordOn = new AtomicBoolean(false);
+
+    //    AtomicBoolean RF_modeOn = new AtomicBoolean(true);
     boolean isRF_mode = true;
     boolean isM_mode = false;
-    boolean isTuohy = false;
-    boolean isStraight = false;
+    private Button SaveSingle;
+//    boolean isTuohy = false;
+//    boolean isStraight = false;
 
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -200,7 +203,8 @@ public class USChartActivity extends AppCompatActivity {
 
         //截圖按鈕
         ScreenShot=(Button) findViewById(R.id.Screenshotbutton);
-
+        //存單筆按鈕
+        SaveSingle=(Button) findViewById(R.id.SaveSingleButton);
         //RF-mode顯示介面
         mChart = (LineChart) findViewById(R.id.chart_line);
         mChart.setDragEnabled(true);
@@ -254,7 +258,7 @@ public class USChartActivity extends AppCompatActivity {
         dataSaveToFile = new DataSaveToFile(this);
         imageSaveToFile = new DataSaveToFile(this);
         SaveRawDataSetup();
-
+        SaveSingleRawDataSetup();
         //TGC設定
         TGCsetup();
 
@@ -281,8 +285,6 @@ public class USChartActivity extends AppCompatActivity {
                     Thread usbrecieveThread = new Thread(new UsbReceiveThread());
                     usbrecieveThread.start(); //接收USB data執行緒
                     DataProcessingThread(); //data前處理執行緒
-                    //DataProcessingAndSubThread();
-                    //DataProcessingAndSubThreadV2();
                     RFChartingThread(); //RF-mode執行緒
                     M_modeDisplayThread(); //M-mode執行緒
                     isFirst = false;
@@ -301,6 +303,8 @@ public class USChartActivity extends AppCompatActivity {
                 imageSaveToFile.extelnalPrivateCreateFolerImageCapture("Screenshot",RF_modeImageName,RF_modeScreenShot);
             }
         });
+        //存單筆按鈕按下後的指令
+
 
         //gain值調整指令
         gain_seekBar.setMin(1);
@@ -460,169 +464,23 @@ public class USChartActivity extends AppCompatActivity {
                         e.printStackTrace();
                     }
                     //raw data前處理
-                    if (UsbFIFOData != null & isDataProcessRunning) {
+                    if (UsbFIFOData != null) {
                         double[] RawData = DataProcessing(UsbFIFOData); //RF-mode raw data前處理
-                        RF_modeFiFOQueue.add(RawData); //建立給RF-mode執行緒的Queue
-                        int [] GrayScaleData = M_modeDataProcessing(RawData); //M-mode data前處理
-                        M_modeFiFOQueue.add(GrayScaleData); //建立給M-mode執行緒的Queue
-                        // 判斷儲存功能啟動
-                        if (isRecord) {
-                            SaveRawDataOn(i, RawData); //儲存raw data
-                            i++;
-                        } else if (!isRecord) {
-                            i = 0; //raw data 儲存檔名順序歸零
-                        }
-                    }
-                    try {
-                        Thread.sleep(10);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }).start();
-    }
-
-    public void DataProcessingAndSubThread(){
-        new Thread(new Runnable() {
-            @RequiresApi(api = Build.VERSION_CODES.N)
-            public void run() {
-                int i = 0; //raw data 儲存檔名順序
-                while (isRunning) {
-                    //從Queue取得data
-                    try {
-                        UsbFIFOData = UsbReceivedFiFOQueue.take();
-                        Log.i(TAG, "run: UsbFrameFiFOQueue.take();");
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    //raw data前處理
-                    if (UsbFIFOData != null & isDataProcessRunning) {
-                        double[] RawData = DataProcessing(UsbFIFOData); //RF-mode raw data前處理
-//                        RF_modeFiFOQueue.add(RawData); //建立給RF-mode執行緒的Queue
-                        // 判斷儲存功能啟動
-                        if (preRawData != null){
-                            double[] RFChartingData = new double[displayDataSize];
-                            for (int j =0; j<displayDataSize; j++){
-                                RFChartingData[j] = RawData[j]- preRawData[j];
-                            }
-                            RF_modeFiFOQueue.add(RFChartingData);
-                            int [] GrayScaleData = M_modeDataProcessing(RFChartingData); //M-mode data前處理
+                        if (isDataProcessRunning) {
+                            RF_modeFiFOQueue.add(RawData); //建立給RF-mode執行緒的Queue
+                            int[] GrayScaleData = M_modeDataProcessing(RawData); //M-mode data前處理
                             M_modeFiFOQueue.add(GrayScaleData); //建立給M-mode執行緒的Queue
-                        }
-                        if (isRecord) {
-                            SaveRawDataOn(i, RawData); //儲存raw data
-                            i++;
-                        }
-                        else if (!isRecord) {
-                            i = 0; //raw data 儲存檔名順序歸零
-                        }
-                        double[] dampingData = Arrays.copyOfRange(RawData, 0, 130);
-                        double[] dampingDataOffset = new double[130];
-                        for (int k =0; k<130; k++){
-                            dampingDataOffset[k] = dampingData[k]+125;
-                        }
-                        preRawData = Arrays.copyOf(dampingDataOffset, displayDataSize);
-                    }
-                    try {
-                        Thread.sleep(10);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }).start();
-    }
-
-    public void DataProcessingAndSubThreadV2(){
-        new Thread(new Runnable() {
-            @RequiresApi(api = Build.VERSION_CODES.N)
-            public void run() {
-                int i = 0; //raw data 儲存檔名順序
-                int k = 0;
-                while (isRunning) {
-                    //從Queue取得data
-                    try {
-                        UsbFIFOData = UsbReceivedFiFOQueue.take();
-                        Log.i(TAG, "run: UsbFrameFiFOQueue.take();");
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    //raw data前處理
-                    if (UsbFIFOData != null & isDataProcessRunning) {
-                        double[] RawData = DataProcessing(UsbFIFOData); //RF-mode raw data前處理
-//                        RF_modeFiFOQueue.add(RawData); //建立給RF-mode執行緒的Queue
-                        // 判斷儲存功能啟動
-                        if (k%10 == 0) {
-                            double[] dampingData = Arrays.copyOfRange(RawData, 0, 130);
-                            preRawData = Arrays.copyOf(dampingData, displayDataSize);
-                            k = 0;
-                        }
-                        else if (k%10 > 0){
-                            double[] RFChartingData = new double[displayDataSize];
-                            for (int j =0; j<displayDataSize; j++){
-                                RFChartingData[j] = RawData[j]- preRawData[j];
+                            // 判斷儲存功能啟動
+                            if (isRecord) {
+                                SaveRawDataOn(i, RawData); //儲存raw data
+                                i++;
+                            } else if (!isRecord) {
+                                i = 0; //raw data 儲存檔名順序歸零
                             }
-                            RF_modeFiFOQueue.add(RFChartingData);
-                            int [] GrayScaleData = M_modeDataProcessing(RFChartingData); //M-mode data前處理
-                            M_modeFiFOQueue.add(GrayScaleData); //建立給M-mode執行緒的Queue
                         }
-                        else if (isRecord) {
-                            SaveRawDataOn(i, RawData); //儲存raw data
-                            i++;
+                        if (isSingleSave){
+                            SaveSingleRawData(RawData);
                         }
-                        else if (!isRecord) {
-                            i = 0; //raw data 儲存檔名順序歸零
-                        }
-
-                        k++;
-                    }
-                    try {
-                        Thread.sleep(10);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }).start();
-    }
-
-    public void DataProcessingAndSubThreadV3(){
-        new Thread(new Runnable() {
-            @RequiresApi(api = Build.VERSION_CODES.N)
-            public void run() {
-                int i = 0; //raw data 儲存檔名順序
-                while (isRunning) {
-                    //從Queue取得data
-                    try {
-                        UsbFIFOData = UsbReceivedFiFOQueue.take();
-                        Log.i(TAG, "run: UsbFrameFiFOQueue.take();");
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    //raw data前處理
-                    if (UsbFIFOData != null & isDataProcessRunning) {
-                        double[] RawData = DataProcessing(UsbFIFOData); //RF-mode raw data前處理
-//                        RF_modeFiFOQueue.add(RawData); //建立給RF-mode執行緒的Queue
-                        // 判斷儲存功能啟動
-                        if (preRawData != null){
-                            double[] RFChartingData = new double[displayDataSize];
-                            for (int j =0; j<displayDataSize; j++){
-                                RFChartingData[j] = RawData[j]- preRawData[j];
-                            }
-                            RF_modeFiFOQueue.add(RFChartingData);
-                            int [] GrayScaleData = M_modeDataProcessing(RFChartingData); //M-mode data前處理
-                            M_modeFiFOQueue.add(GrayScaleData); //建立給M-mode執行緒的Queue
-                        }
-                        if (isRecord) {
-                            SaveRawDataOn(i, RawData); //儲存raw data
-                            i++;
-                        }
-                        else if (!isRecord) {
-                            i = 0; //raw data 儲存檔名順序歸零
-                        }
-                        double[] dampingData = Arrays.copyOfRange(RawData, 0, 130);
-                        preRawData = Arrays.copyOf(dampingData, displayDataSize);
                     }
                     try {
                         Thread.sleep(10);
@@ -678,29 +536,14 @@ public class USChartActivity extends AppCompatActivity {
             -0.019709593,0.005125798,0.018813798,0.009019923,-0.001676316,0.00187589,0.005051356,-0.005296733,-0.015379445,
             -0.008274433,0.006862005,0.01007731,0.002216285,-0.000277791,0.00488987,0.003473931,-0.008223024,-0.01442579,
             -0.004361026,0.010237207,0.012026327,0.001705211,-0.00628393,-0.005074854,-0.000952622,-0.000232548,-0.001311405,-0.000977696,0.003344942};//15-30BPF
-    double [] BPF3_15 ={-0.0478465141837345,0.0109849870932818,0.012472664028663,0.0124409234191119,0.00988166894099443,0.00661759570250005,0.00562922016135185,0.00807127982934759,
-            0.0118377239614824,0.0132433177805449,0.0104772025538754,0.00562545561738003,0.00312497016715282,0.00572623311867405,0.0115796401871604,0.0154300077920813,0.0130701113309352,
-            0.00555453276353051,-0.0012131189954275,-0.00140093908696472,0.00529102652821891,0.0126930042186378,0.0131173540910855,0.00428139620345643,-0.00796458315444271,-0.0140832046006051,
-            -0.00918508109686826,0.00195049504809347,0.0081632274907368,0.00140390731520599,-0.0154745839518587,-0.0300340775454394,-0.0304733377745706,-0.0165357487657059,-0.00124315655035699,
-            -0.000698159119130006,-0.0196689023687482,-0.045463020532027,-0.0568252407150266,-0.0420868877673358,-0.0117242367379124,0.0068089407712981,-0.00933743361285765,-0.0565647376916527,
-            -0.100061377161687,-0.094903357218257,-0.0185744707252816,0.107442123321316,0.224947227587118,0.272757076979439,0.224947227587118,0.107442123321316,-0.0185744707252816,-0.094903357218257,
-            -0.100061377161687,-0.0565647376916527,-0.00933743361285765,0.0068089407712981,-0.0117242367379124,-0.0420868877673358,-0.0568252407150266,-0.045463020532027,-0.0196689023687482,
-            -0.000698159119130006,-0.00124315655035699,-0.0165357487657059,-0.0304733377745706,-0.0300340775454394,-0.0154745839518587,0.00140390731520599,0.0081632274907368,0.00195049504809347,
-            -0.00918508109686826,-0.0140832046006051,-0.00796458315444271,0.00428139620345643,0.0131173540910855,0.0126930042186378,0.00529102652821891,-0.00140093908696472,-0.0012131189954275,
-            0.00555453276353051,0.0130701113309352,0.0154300077920813,0.0115796401871604,0.00572623311867405,0.00312497016715282,0.00562545561738003,0.0104772025538754,0.0132433177805449,
-            0.0118377239614824,0.00807127982934759,0.00562922016135185,0.00661759570250005,0.00988166894099443,0.0124409234191119,0.012472664028663,0.0109849870932818,-0.0478465141837345};//3-15BPF
 
     //濾波
     @RequiresApi(api = Build.VERSION_CODES.N)
     private double[] convolutionFilter(int[] inputs){
         double[] doubles = Arrays.stream(inputs).asDoubleStream().toArray();
         //判斷適合的濾波器
-        if (is5MHz){
-            return MathArrays.convolve(doubles, BPF3_15);
-        }
-        else {
-            return MathArrays.convolve(doubles, BPF15_30);
-        }
+        //由於都是20MHz因此不需要有判斷式了
+        return MathArrays.convolve(doubles, BPF15_30);
     }
 
     //M-mode data前處理
@@ -1384,19 +1227,17 @@ public class USChartActivity extends AppCompatActivity {
         });
     }
     //raw data 儲存功能設定
-    private void SaveRawDataSetup(){
+    private void SaveRawDataSetup() {
         dataSaveButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v)
-            {
-                if(RecordOn.get() == false){
+            public void onClick(View v) {
+                if (RecordOn.get() == false) {
                     RecordOn.set(true);
                     isRecord = true;
                     dataSaveButton.setText("RECORD OFF"); //儲存按鈕文字變化
                     dataSaveButton.setTextColor(Color.rgb(255, 0, 0)); //儲存按鈕顏色變化（紅）
                     FileFolderNameDate = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()); //新增儲存路徑資料夾
-                }
-                else{
+                } else {
                     RecordOn.set(false);
                     isRecord = false;
                     dataSaveButton.setText("RECORD ON"); //儲存按鈕文字變化
@@ -1405,7 +1246,22 @@ public class USChartActivity extends AppCompatActivity {
             }
         });
     }
-
+    private void SaveSingleRawDataSetup(){
+        SaveSingle.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (SingleRecordOn.get() == false) {
+                    SingleRecordOn.set(true);
+                    isSingleSave = true;
+                    FileFolderNameDate = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()); //新增儲存路徑資料夾
+                } else {
+                    SingleRecordOn.set(false);
+                    isSingleSave = false;
+                    dataSaveButton.setTextColor(Color.rgb(0, 0, 0)); //儲存按鈕顏色變化（黑）
+                }
+            }
+        });
+    }
     //raw data 儲存
     private void SaveRawDataOn(int j, double[] saveRawData) {
         int RecordLength ;
@@ -1419,5 +1275,18 @@ public class USChartActivity extends AppCompatActivity {
         String rawDataFileName = (new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date())+"_RF(" + j + ")"); //檔名設定
         dataSaveToFile.extelnalPrivateCreateFoler(FileFolderNameDate,rawDataFileName,  Arrays.toString(stringTmp)); //存檔
     }
+    //可以存單筆資料
 
+    private void SaveSingleRawData(double[] saveRawData) {
+        int RecordLength ;
+        RecordLength= (int)Math.round(Depth/6.16*1000); //儲存深度
+
+        String[] stringTmp = new String[RecordLength]; //轉string
+        for(int i =0; i<RecordLength; i++) {
+            float value = (float) saveRawData[i]* gain;
+            stringTmp[i] = Float.toString(value);
+        }
+        String rawDataFileName = (new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date())+"_RF"); //檔名設定
+        dataSaveToFile.extelnalPrivateCreateFoler(FileFolderNameDate,rawDataFileName,  Arrays.toString(stringTmp)); //存檔
+    }
 }

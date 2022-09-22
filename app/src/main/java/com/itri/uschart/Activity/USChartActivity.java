@@ -27,7 +27,11 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.SeekBar;
 import android.widget.TextView;
-
+import java.util.*;
+import java.lang.*;
+import java.io.*;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
@@ -93,9 +97,11 @@ public class USChartActivity extends AppCompatActivity {
     boolean isSingleSave = false;
     BlockingQueue<byte[]> UsbReceivedFiFOQueue = new LinkedBlockingQueue<byte[]>(Integer.MAX_VALUE); //USB data Queue
     BlockingQueue<double[]> RF_modeFiFOQueue = new LinkedBlockingQueue<double[]>(Integer.MAX_VALUE); //RF-mode data Queue
+    BlockingQueue<double[]> FindMaxFiFOQueue = new LinkedBlockingQueue<double[]>(Integer.MAX_VALUE); //FindMax data Queue
     BlockingQueue<int[]> M_modeFiFOQueue = new LinkedBlockingQueue<int[]>(Integer.MAX_VALUE);//Every //M-mode data Queue
     private byte[] UsbFIFOData = new byte[PacketSize];
     private double[] RF_modeFIFOData = new double[dataSize];
+    private double[] FindMaxFIFOData = new double[dataSize];
     private double[] preRawData = new double[dataSize];
     private int[] M_modeFIFOData = new int[dataSize];
     private int displayDataSize = 2048;
@@ -129,6 +135,7 @@ public class USChartActivity extends AppCompatActivity {
     private double contrast = 1.5;
     private float Amplitude = (float) (500 * 1.8 / 4096);
     private TextView GainDisplay, DepthDisplay, AmplitudeDisplay;
+    private TextView Vpp_max;
 //    private TextView RecordTime;
     private TextView depth1, depth2, depth3, depth4, depth5;
     private TextView Time2, Time3, Time4, Time5;
@@ -188,7 +195,9 @@ public class USChartActivity extends AppCompatActivity {
 
         //M-mode對比調整介面
         M_modeSeekBar = (SeekBar) findViewById(R.id.M_modeContrastSeekBar);
+        //顯示Vpp數值大小
 
+        Vpp_max = (TextView) findViewById(R.id.Vpp);
         //發射頻率調整介面
 //        radioGroup = (RadioGroup)findViewById(R.id.radio_group);
 //        RadioButton radioButton1 = (RadioButton) findViewById(R.id.radioButton1);
@@ -285,6 +294,7 @@ public class USChartActivity extends AppCompatActivity {
                     Thread usbrecieveThread = new Thread(new UsbReceiveThread());
                     usbrecieveThread.start(); //接收USB data執行緒
                     DataProcessingThread(); //data前處理執行緒
+                    Signal_MaximumThread(); //尋找最大值執行緒
                     RFChartingThread(); //RF-mode執行緒
                     M_modeDisplayThread(); //M-mode執行緒
                     isFirst = false;
@@ -467,7 +477,9 @@ public class USChartActivity extends AppCompatActivity {
                     if (UsbFIFOData != null) {
                         double[] RawData = DataProcessing(UsbFIFOData); //RF-mode raw data前處理
                         if (isDataProcessRunning) {
+
                             RF_modeFiFOQueue.add(RawData); //建立給RF-mode執行緒的Queue
+                            FindMaxFiFOQueue.add(RawData); //建立給FindMax使用的Queue
                             int[] GrayScaleData = M_modeDataProcessing(RawData); //M-mode data前處理
                             M_modeFiFOQueue.add(GrayScaleData); //建立給M-mode執行緒的Queue
                             // 判斷儲存功能啟動
@@ -480,7 +492,9 @@ public class USChartActivity extends AppCompatActivity {
                         }
                         if (isSingleSave){
                             SaveSingleRawData(RawData);
+                            isSingleSave=false;
                         }
+
                     }
                     try {
                         Thread.sleep(10);
@@ -496,6 +510,7 @@ public class USChartActivity extends AppCompatActivity {
     @RequiresApi(api = Build.VERSION_CODES.N)
     private double[] DataProcessing(byte[] FrameData){
         int[] CheckedData = ParserAndHeadCheck(FrameData); //trigger
+        double max_value;
         double[] convData = Arrays.copyOfRange(convolutionFilter(CheckedData), 131, displayDataSize+131 ); //前處理濾波
         //代入gain值
         double[] RFmodeData  = new double[displayDataSize];
@@ -698,6 +713,8 @@ public class USChartActivity extends AppCompatActivity {
             @RequiresApi(api = Build.VERSION_CODES.N)
             public void run() {
                 int i = 0;
+                double max_value=0;
+
                 while (isRunning) {
                     timeStart = System.currentTimeMillis();
                     //從Queue取得RF-mode data
@@ -712,6 +729,7 @@ public class USChartActivity extends AppCompatActivity {
                         float x = NeedleTipRF;
                         MPCharting(i, RF_modeFIFOData);
                         mChart.invalidate();
+
                     }
                     else if (i == 5){
                         i = 0;
@@ -719,6 +737,38 @@ public class USChartActivity extends AppCompatActivity {
                     i++;
                     timeEnd = System.currentTimeMillis();
                     Log.i("RFChartingThread", "Success.");
+                }
+            }
+        }).start();
+    }
+
+    public void Signal_MaximumThread(){
+        new Thread(new Runnable() {
+
+            @RequiresApi(api = Build.VERSION_CODES.N)
+            public void run() {
+                while (isRunning) {
+                    timeStart = System.currentTimeMillis();
+                    //從Queue取得RF-mode data
+                    try {
+                        FindMaxFIFOData = FindMaxFiFOQueue.take();
+                        Log.i(TAG, "run: FindMaxRawData.take();");
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    double max_value=0;
+                    double max_value_=0;
+                    //畫出RF-mode訊號圖Math.round((max_loc*6.16/1000)*100/100);
+                    if (FindMaxFIFOData != null & isDataProcessRunning) {
+                        max_value = FindMax(FindMaxFIFOData);
+                    }
+                    timeEnd = System.currentTimeMillis();
+                    max_value_= max_value*1.8/4096;
+                    BigDecimal bd = new BigDecimal(max_value_).setScale(2, RoundingMode.HALF_UP); //取小數點下兩位的方法
+                    double val2 = bd.doubleValue();
+                    Vpp_max.setText(val2+"V");
+
+                    Log.i(TAG, "Max value:" + max_value_);
                 }
             }
         }).start();
@@ -1288,5 +1338,15 @@ public class USChartActivity extends AppCompatActivity {
         }
         String rawDataFileName = (new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date())+"_RF"); //檔名設定
         dataSaveToFile.extelnalPrivateCreateFoler(FileFolderNameDate,rawDataFileName,  Arrays.toString(stringTmp)); //存檔
+    }
+
+    private double FindMax(double[] array){
+        double max_value=0;
+        for (int i = 200; i < array.length-100; i++) {
+            if (array[i] > max_value) {
+                max_value = array[i];
+            }
+        }
+        return max_value;
     }
 }

@@ -650,9 +650,15 @@
         android:layout_below="@+id/chart_line"
         android:layout_marginTop="360dp"
         android:layout_marginStart="1248dp"
-
         android:textSize="16sp"/>
 
-
+    <TextView
+        android:id="@+id/Vpp"
+        android:layout_width="165dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="5dp"
+        android:layout_marginTop="550dp"
+        android:textSize="30sp"
+        android:text="Vpp:" />
 
 </RelativeLayout>

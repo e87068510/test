@@ -14,7 +14,8 @@
         android:layout_marginStart="50dp"
         android:layout_marginBottom="8dp"
         android:contentDescription="@string/app_name"
-        android:src="@drawable/ic_send_black_24dp" />
+        android:src="@drawable/ic_send_black_24dp"
+        android:visibility="gone" />
 
     <RadioGroup
         android:id="@+id/radio_group"
@@ -85,15 +86,16 @@
         android:text="SaveSingle"
         android:textSize="16sp"
         />
+
+
     <com.github.mikephil.charting.charts.LineChart
         android:id="@+id/chart_line"
         android:layout_width="match_parent"
         android:layout_height="280dp"
         android:layout_below="@+id/read_message"
-        android:layout_marginTop="10dp"
         android:layout_marginStart="180dp"
-        android:layout_marginEnd="15dp"/>
-
+        android:layout_marginTop="63dp"
+        android:layout_marginEnd="15dp" />
 
     <TextView
         android:id="@+id/max_textview"
@@ -660,5 +662,17 @@
         android:layout_marginTop="550dp"
         android:textSize="30sp"
         android:text="Vpp:" />
+
+    <ToggleButton
+        android:id="@+id/toggleButton"
+        android:layout_width="150dp"
+        android:layout_height="100dp"
+        android:layout_marginStart="15dp"
+        android:layout_marginTop="15dp"
+        android:text="ToggleButton"
+        android:textOff="Run"
+        android:textOn="Stop"
+        android:textSize="40dp" />
+
 
 </RelativeLayout>

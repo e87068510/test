@@ -20,6 +20,7 @@ import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -27,6 +28,8 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.ToggleButton;
+
 import java.util.*;
 import java.lang.*;
 import java.io.*;
@@ -81,6 +84,7 @@ public class USChartActivity extends AppCompatActivity {
     boolean isFirst = true;
 
     ImageButton button_ReceiveData;
+    ToggleButton toggle_ReceiveData,toggle_Saved;
 
 
     private boolean forceClaim = true;
@@ -175,6 +179,7 @@ public class USChartActivity extends AppCompatActivity {
     @RequiresApi(api = Build.VERSION_CODES.O)
     private void initialSetup(){
         button_ReceiveData = findViewById(R.id.read_message);  //開始顯示RF/M-mode按鈕
+        toggle_ReceiveData = findViewById(R.id.toggleButton); // 建立一個可以切換模式的按鈕
 //        max_editText = (EditText) findViewById(R.id.max_editText);
 //        min_editText = (EditText) findViewById(R.id.min_editText);
 //        max_XeditText = (EditText) findViewById(R.id.max_XeditText);
@@ -271,37 +276,70 @@ public class USChartActivity extends AppCompatActivity {
         //TGC設定
         TGCsetup();
 
-        //顯示RF/M-mode按鈕按下後的指令
-        button_ReceiveData.setOnClickListener(new View.OnClickListener() {
+        toggle_ReceiveData.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
-            public void onClick(View view) {
-                Log.i(TAG, "Get counter, New thread START");
-                isDataProcessRunning = !isDataProcessRunning;
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked){
+                    Log.i(TAG, "Get counter, New thread START");
+                    isDataProcessRunning = !isDataProcessRunning;
 
-                if (isFirst) {
-                    deviceConnection = usbManager.openDevice(device);
-                    Log.i(TAG, "Device connected.");
-                    usbInterface = device.getInterface(0);
-                    endpointOut = usbInterface.getEndpoint(0);
-                    endpointIn = usbInterface.getEndpoint(1);
-                    deviceConnection.claimInterface(usbInterface, forceClaim);
-                    Log.i(TAG, "deviceConnection.claimInterface");
+                    if (isFirst) {
+                        deviceConnection = usbManager.openDevice(device);
+                        Log.i(TAG, "Device connected.");
+                        usbInterface = device.getInterface(0);
+                        endpointOut = usbInterface.getEndpoint(0);
+                        endpointIn = usbInterface.getEndpoint(1);
+                        deviceConnection.claimInterface(usbInterface, forceClaim);
+                        Log.i(TAG, "deviceConnection.claimInterface");
 
-                    isRunning = true;
-                    isRF_mode = true;
-                    isM_mode = false;
-                    RF_modeDisplayButton.setTextColor(Color.rgb(255, 0, 0));
-                    Thread usbrecieveThread = new Thread(new UsbReceiveThread());
-                    usbrecieveThread.start(); //接收USB data執行緒
-                    DataProcessingThread(); //data前處理執行緒
-                    Signal_MaximumThread(); //尋找最大值執行緒
-                    RFChartingThread(); //RF-mode執行緒
-                    M_modeDisplayThread(); //M-mode執行緒
-                    isFirst = false;
+                        isRunning = true;
+                        isRF_mode = true;
+                        isM_mode = false;
+                        RF_modeDisplayButton.setTextColor(Color.rgb(255, 0, 0));
+                        Thread usbrecieveThread = new Thread(new UsbReceiveThread());
+                        usbrecieveThread.start(); //接收USB data執行緒
+                        DataProcessingThread(); //data前處理執行緒
+                        Signal_MaximumThread(); //尋找最大值執行緒
+                        RFChartingThread(); //RF-mode執行緒
+                        M_modeDisplayThread(); //M-mode執行緒
+                        isFirst = false;
+                    }
+                }else{
+                    isDataProcessRunning = !isDataProcessRunning;
                 }
-
             }
         });
+        //顯示RF/M-mode按鈕按下後的指令
+//        button_ReceiveData.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                Log.i(TAG, "Get counter, New thread START");
+//                isDataProcessRunning = !isDataProcessRunning;
+//
+//                if (isFirst) {
+//                    deviceConnection = usbManager.openDevice(device);
+//                    Log.i(TAG, "Device connected.");
+//                    usbInterface = device.getInterface(0);
+//                    endpointOut = usbInterface.getEndpoint(0);
+//                    endpointIn = usbInterface.getEndpoint(1);
+//                    deviceConnection.claimInterface(usbInterface, forceClaim);
+//                    Log.i(TAG, "deviceConnection.claimInterface");
+//
+//                    isRunning = true;
+//                    isRF_mode = true;
+//                    isM_mode = false;
+//                    RF_modeDisplayButton.setTextColor(Color.rgb(255, 0, 0));
+//                    Thread usbrecieveThread = new Thread(new UsbReceiveThread());
+//                    usbrecieveThread.start(); //接收USB data執行緒
+//                    DataProcessingThread(); //data前處理執行緒
+//                    Signal_MaximumThread(); //尋找最大值執行緒
+//                    RFChartingThread(); //RF-mode執行緒
+//                    M_modeDisplayThread(); //M-mode執行緒
+//                    isFirst = false;
+//                }
+//
+//            }
+//        });
 
         //截圖按鈕按下後的指令
         ScreenShot.setOnClickListener(new View.OnClickListener() {
@@ -1296,6 +1334,7 @@ public class USChartActivity extends AppCompatActivity {
             }
         });
     }
+    Handler handler_ = new Handler();
     private void SaveSingleRawDataSetup(){
         SaveSingle.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -1304,10 +1343,15 @@ public class USChartActivity extends AppCompatActivity {
                     SingleRecordOn.set(true);
                     isSingleSave = true;
                     FileFolderNameDate = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()); //新增儲存路徑資料夾
-                } else {
-                    SingleRecordOn.set(false);
-                    isSingleSave = false;
-                    dataSaveButton.setTextColor(Color.rgb(0, 0, 0)); //儲存按鈕顏色變化（黑）
+                    SaveSingle.setTextColor(Color.rgb(0, 201, 87)); //儲存按鈕顏色變化（綠）
+                    SaveSingle.setText("Saved!");
+                    handler_.postDelayed(new Runnable() {
+                        public void run() {
+                            SaveSingle.setTextColor(Color.rgb(0, 0, 0)); //儲存按鈕顏色變化（綠）
+                            SaveSingle.setText("SaveSingle!");
+                            SingleRecordOn.set(false);
+                        }
+                    }, 200);
                 }
             }
         });
@@ -1324,6 +1368,7 @@ public class USChartActivity extends AppCompatActivity {
         }
         String rawDataFileName = (new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date())+"_RF(" + j + ")"); //檔名設定
         dataSaveToFile.extelnalPrivateCreateFoler(FileFolderNameDate,rawDataFileName,  Arrays.toString(stringTmp)); //存檔
+
     }
     //可以存單筆資料
 
@@ -1338,6 +1383,9 @@ public class USChartActivity extends AppCompatActivity {
         }
         String rawDataFileName = (new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date())+"_RF"); //檔名設定
         dataSaveToFile.extelnalPrivateCreateFoler(FileFolderNameDate,rawDataFileName,  Arrays.toString(stringTmp)); //存檔
+
+//        SaveSingle.setText("SaveSingle");
+//        dataSaveButton.setTextColor(Color.rgb(0, 0, 0)); //儲存按鈕顏色變化（黑）
     }
 
     private double FindMax(double[] array){

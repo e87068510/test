@@ -115,11 +115,11 @@ public class USChartActivity extends AppCompatActivity {
     private Handler handler;
 
     private long timeStart,timeEnd, executiveTime;
-
+    private int maxvalueloc=100;
     private DataSaveToFile dataSaveToFile;
     private DataSaveToFile imageSaveToFile;
     private double[] SaveRawData = new double[dataSize];
-    private LineChart mChart;
+    private LineChart mChart,TrackChart;
     private ImageView M_modeImage, NeedleTipPosition;
     private Button TuohyNeedleTip, StraightNeedleTip;
 
@@ -137,6 +137,7 @@ public class USChartActivity extends AppCompatActivity {
     private float gain = 6.f;
     private float GainText = (float) (20 * Math.log10(gain));
     private double contrast = 1.5;
+    double[] RawData_temp; //RF-mode raw data前處理
     private float Amplitude = (float) (500 * 1.8 / 4096);
     private TextView GainDisplay, DepthDisplay, AmplitudeDisplay;
     private TextView Vpp_max;
@@ -226,6 +227,13 @@ public class USChartActivity extends AppCompatActivity {
         mChart.setHorizontalScrollBarEnabled(true);
         mChart.getLegend().setEnabled(false); // Remove Legend
         mChart.getDescription().setEnabled(false); //remove description
+        //tracking顯示介面
+        TrackChart = (LineChart) findViewById(R.id.chart_line_tracking);
+        TrackChart.setDragEnabled(true);
+        TrackChart.setScaleEnabled(true);
+        TrackChart.setHorizontalScrollBarEnabled(true);
+        TrackChart.getLegend().setEnabled(false); // Remove Legend
+        TrackChart.getDescription().setEnabled(false); //remove description
 
 //        RecordTime = (TextView) findViewById(R.id.RecordTime);
         //M-mode深度座標
@@ -301,6 +309,7 @@ public class USChartActivity extends AppCompatActivity {
                         DataProcessingThread(); //data前處理執行緒
                         Signal_MaximumThread(); //尋找最大值執行緒
                         RFChartingThread(); //RF-mode執行緒
+                        TrackChartThread(); //疊tracking上去
                         M_modeDisplayThread(); //M-mode執行緒
                         isFirst = false;
                     }
@@ -514,8 +523,10 @@ public class USChartActivity extends AppCompatActivity {
                     //raw data前處理
                     if (UsbFIFOData != null) {
                         double[] RawData = DataProcessing(UsbFIFOData); //RF-mode raw data前處理
+                        
+                        //double[] RawData_temp=DataProcessing(UsbFIFOData);
                         if (isDataProcessRunning) {
-
+                            RawData_temp = RawData;
                             RF_modeFiFOQueue.add(RawData); //建立給RF-mode執行緒的Queue
                             FindMaxFiFOQueue.add(RawData); //建立給FindMax使用的Queue
                             int[] GrayScaleData = M_modeDataProcessing(RawData); //M-mode data前處理
@@ -527,11 +538,13 @@ public class USChartActivity extends AppCompatActivity {
                             } else if (!isRecord) {
                                 i = 0; //raw data 儲存檔名順序歸零
                             }
+                        }else{
+                            if (isSingleSave){
+                                SaveSingleRawData(RawData_temp);
+                                isSingleSave=false;
+                            }
                         }
-                        if (isSingleSave){
-                            SaveSingleRawData(RawData);
-                            isSingleSave=false;
-                        }
+
 
                     }
                     try {
@@ -751,7 +764,6 @@ public class USChartActivity extends AppCompatActivity {
             @RequiresApi(api = Build.VERSION_CODES.N)
             public void run() {
                 int i = 0;
-                double max_value=0;
 
                 while (isRunning) {
                     timeStart = System.currentTimeMillis();
@@ -780,6 +792,32 @@ public class USChartActivity extends AppCompatActivity {
         }).start();
     }
 
+    public void TrackChartThread(){
+        new Thread(new Runnable() {
+            @RequiresApi(api = Build.VERSION_CODES.N)
+            public void run() {
+                int i = 0;
+
+                while (isRunning) {
+                    timeStart = System.currentTimeMillis();
+                    //從Queue取得RF-mode data
+
+                    //畫出RF-mode訊號圖
+                    if (isDataProcessRunning & isRF_mode & !isM_mode) {
+                        TrackCharting(maxvalueloc);
+                        TrackChart.invalidate();
+                    }
+                    else if (i == 5){
+                        i = 0;
+                    }
+                    i++;
+                    timeEnd = System.currentTimeMillis();
+                    Log.i("TrackChartingThread", "Success.");
+                }
+            }
+        }).start();
+    }
+
     public void Signal_MaximumThread(){
         new Thread(new Runnable() {
 
@@ -795,23 +833,86 @@ public class USChartActivity extends AppCompatActivity {
                         e.printStackTrace();
                     }
                     double max_value=0;
-                    double max_value_=0;
+                    double min_value=0;
                     //畫出RF-mode訊號圖Math.round((max_loc*6.16/1000)*100/100);
                     if (FindMaxFIFOData != null & isDataProcessRunning) {
-                        max_value = FindMax(FindMaxFIFOData);
+                        max_value = FindMax(FindMaxFIFOData);//尋找最大值
+                        maxvalueloc = (int) FindMaxloc(FindMaxFIFOData); //尋找最大值位置
+                        min_value = FindMin(FindMaxFIFOData);//尋找最小值
                     }
                     timeEnd = System.currentTimeMillis();
-                    max_value_= max_value*1.8/4096;
-                    BigDecimal bd = new BigDecimal(max_value_).setScale(2, RoundingMode.HALF_UP); //取小數點下兩位的方法
-                    double val2 = bd.doubleValue();
-                    Vpp_max.setText(val2+"V");
 
-                    Log.i(TAG, "Max value:" + max_value_);
+                    double max_value_= max_value*1.8/4096; //將振幅從點數轉成V
+                    double min_value_ = min_value*1.8/4096; //將振幅從點數轉成V
+
+                    double vpp = max_value_-min_value_; // 計算peak to peak
+                    BigDecimal bd = new BigDecimal(vpp).setScale(2, RoundingMode.HALF_UP); //取小數點下兩位的方法
+
+                    double val1 = bd.doubleValue();
+
+                    Vpp_max.setText(val1+"V");
+
+                    Log.i(TAG, "Max value:" + val1);
                 }
             }
         }).start();
     }
+    private void TrackCharting(int max_location){
+        String[] stringTmp = new String[displayDataSize];
+        final String[] xLable = new String[displayDataSize];
+        ArrayList<Entry> line_ = new ArrayList<>();
+        for (int i=0; i<displayDataSize; i++){
+            if (i<max_location-50 || i>max_location+50){
+                line_.add(new Entry(i,-Amplitude));
+            }else{
+                line_.add(new Entry(i,Amplitude));
+            }
+        }
 
+        LineDataSet set2 = new LineDataSet(line_,"Tracking Data");
+        set2.setFillAlpha(255);
+        set2.setLineWidth(0.5f); //設定線寬
+        set2.setColor(Color.CYAN); //設定曲線顏色
+        set2.setDrawCircles(false); //設定是否顯示座標點的小圓圈
+        ArrayList<ILineDataSet> dataSets= new  ArrayList<>(); //
+        dataSets.add(set2); //
+
+
+        LineData  data_ = new LineData(dataSets);
+        XAxis xAxis_ = TrackChart.getXAxis(); // 取得 TrackChart 的x軸資訊
+        YAxis yAxis_ = TrackChart.getAxisLeft(); // 取得 TrackChart 的左邊y軸資訊
+        YAxis yAxisR_ = TrackChart.getAxisRight(); // 取得 TrackChart 的右邊y軸資訊
+        yAxisR_.setEnabled(false);
+        float maxXLabel,minYLabel,maxYLabel;
+        minYLabel = -Amplitude;
+        maxYLabel = Amplitude;
+        maxXLabel = (int)Math.round(Depth/6.16*1000);
+
+        xAxis_.setAxisMaximum(maxXLabel);
+        yAxis_.setAxisMinimum(minYLabel); // start at zero
+        yAxis_.setAxisMaximum(maxYLabel); // the axis maximum is 100
+        yAxis_.setTextColor(Color.BLACK);
+        yAxis_.setGranularity(1f); // interval 1
+        yAxis_.setLabelCount(9, true); // force 6 labels
+
+        IAxisValueFormatter iAxisValueFormatter = new IAxisValueFormatter() {
+            @Override
+            public String getFormattedValue(float v, AxisBase axisBase) {
+                int index = (int) v;
+                if (index < 0 || index >= displayDataSize) {
+                    return "";
+                } else {
+                    return xLable[Math.abs((int)v)];
+                }
+            }
+        };
+        xAxis_.setValueFormatter(iAxisValueFormatter);
+        xAxis_.setLabelCount(11, true);
+        TrackChart.setData(data_);
+        TrackChart.getData().setHighlightEnabled(false);
+        TrackChart.setVisibleXRangeMaximum(displayDataSize);
+
+    }
     private void MPCharting(int j, double[] gainData){
 
         String[] stringTmp = new String[displayDataSize];
@@ -1390,11 +1491,31 @@ public class USChartActivity extends AppCompatActivity {
 
     private double FindMax(double[] array){
         double max_value=0;
-        for (int i = 200; i < array.length-100; i++) {
+        for (int i = 150; i < array.length-100; i++) {
             if (array[i] > max_value) {
                 max_value = array[i];
             }
         }
         return max_value;
+    }
+    private double FindMaxloc(double[] array){
+        double max_value=0;
+        double max_value_loc=0;
+        for (int i = 150; i < array.length-100; i++) {
+            if (array[i] > max_value) {
+                max_value = array[i];
+                max_value_loc=i;
+            }
+        }
+        return max_value_loc;
+    }
+    private double FindMin(double[] array){
+        double min_value=0;
+        for (int i = 150; i < array.length-100; i++) {
+            if (array[i] < min_value) {
+                min_value = array[i];
+            }
+        }
+        return min_value;
     }
 }

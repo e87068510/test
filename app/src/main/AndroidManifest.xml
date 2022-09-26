@@ -5,7 +5,7 @@
     <application
         android:allowBackup="true"
         android:icon="@drawable/signal_processing"
-        android:label="US RFandM_mode"
+        android:label="US Testing"
         android:roundIcon="@drawable/signal_processing"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">

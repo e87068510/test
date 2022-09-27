@@ -98,14 +98,17 @@ public class USChartActivity extends AppCompatActivity {
     boolean isRunning = false;
     boolean isDataProcessRunning = false;
     boolean isRecord = false;
-    boolean isSingleSave = false;
+    boolean isSingleSave = false; //初始化是否有進行單筆存取
+    boolean isTracking = false; //初始化是否有按下追蹤按鈕
     BlockingQueue<byte[]> UsbReceivedFiFOQueue = new LinkedBlockingQueue<byte[]>(Integer.MAX_VALUE); //USB data Queue
     BlockingQueue<double[]> RF_modeFiFOQueue = new LinkedBlockingQueue<double[]>(Integer.MAX_VALUE); //RF-mode data Queue
     BlockingQueue<double[]> FindMaxFiFOQueue = new LinkedBlockingQueue<double[]>(Integer.MAX_VALUE); //FindMax data Queue
+    BlockingQueue<double[]> FindMaxlocFiFOQueue = new LinkedBlockingQueue<double[]>(Integer.MAX_VALUE); //FindMax data Queue
     BlockingQueue<int[]> M_modeFiFOQueue = new LinkedBlockingQueue<int[]>(Integer.MAX_VALUE);//Every //M-mode data Queue
     private byte[] UsbFIFOData = new byte[PacketSize];
     private double[] RF_modeFIFOData = new double[dataSize];
     private double[] FindMaxFIFOData = new double[dataSize];
+    private double[] FindMaxlocFIFOData = new double[dataSize];
     private double[] preRawData = new double[dataSize];
     private int[] M_modeFIFOData = new int[dataSize];
     private int displayDataSize = 2048;
@@ -116,6 +119,7 @@ public class USChartActivity extends AppCompatActivity {
 
     private long timeStart,timeEnd, executiveTime;
     private int maxvalueloc=100;
+    private double max_value_;
     private DataSaveToFile dataSaveToFile;
     private DataSaveToFile imageSaveToFile;
     private double[] SaveRawData = new double[dataSize];
@@ -157,11 +161,12 @@ public class USChartActivity extends AppCompatActivity {
     private Button dataSaveButton;
     AtomicBoolean RecordOn = new AtomicBoolean(false);
     AtomicBoolean SingleRecordOn = new AtomicBoolean(false);
-
+    AtomicBoolean TrackingOn = new AtomicBoolean(false);
     //    AtomicBoolean RF_modeOn = new AtomicBoolean(true);
     boolean isRF_mode = true;
     boolean isM_mode = false;
     private Button SaveSingle;
+    private Button Tracking;
 //    boolean isTuohy = false;
 //    boolean isStraight = false;
 
@@ -220,6 +225,8 @@ public class USChartActivity extends AppCompatActivity {
         ScreenShot=(Button) findViewById(R.id.Screenshotbutton);
         //存單筆按鈕
         SaveSingle=(Button) findViewById(R.id.SaveSingleButton);
+        //追蹤按鈕
+        Tracking=(Button) findViewById(R.id.TrackingButton);
         //RF-mode顯示介面
         mChart = (LineChart) findViewById(R.id.chart_line);
         mChart.setDragEnabled(true);
@@ -281,6 +288,7 @@ public class USChartActivity extends AppCompatActivity {
         imageSaveToFile = new DataSaveToFile(this);
         SaveRawDataSetup();
         SaveSingleRawDataSetup();
+        TrackingSetup(); //初始化設定 去確保按鈕是否有按下
         //TGC設定
         TGCsetup();
 
@@ -309,7 +317,7 @@ public class USChartActivity extends AppCompatActivity {
                         DataProcessingThread(); //data前處理執行緒
                         Signal_MaximumThread(); //尋找最大值執行緒
                         RFChartingThread(); //RF-mode執行緒
-                        TrackChartThread(); //疊tracking上去
+                        //TrackChartThread(); //疊tracking上去
                         M_modeDisplayThread(); //M-mode執行緒
                         isFirst = false;
                     }
@@ -318,37 +326,6 @@ public class USChartActivity extends AppCompatActivity {
                 }
             }
         });
-        //顯示RF/M-mode按鈕按下後的指令
-//        button_ReceiveData.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                Log.i(TAG, "Get counter, New thread START");
-//                isDataProcessRunning = !isDataProcessRunning;
-//
-//                if (isFirst) {
-//                    deviceConnection = usbManager.openDevice(device);
-//                    Log.i(TAG, "Device connected.");
-//                    usbInterface = device.getInterface(0);
-//                    endpointOut = usbInterface.getEndpoint(0);
-//                    endpointIn = usbInterface.getEndpoint(1);
-//                    deviceConnection.claimInterface(usbInterface, forceClaim);
-//                    Log.i(TAG, "deviceConnection.claimInterface");
-//
-//                    isRunning = true;
-//                    isRF_mode = true;
-//                    isM_mode = false;
-//                    RF_modeDisplayButton.setTextColor(Color.rgb(255, 0, 0));
-//                    Thread usbrecieveThread = new Thread(new UsbReceiveThread());
-//                    usbrecieveThread.start(); //接收USB data執行緒
-//                    DataProcessingThread(); //data前處理執行緒
-//                    Signal_MaximumThread(); //尋找最大值執行緒
-//                    RFChartingThread(); //RF-mode執行緒
-//                    M_modeDisplayThread(); //M-mode執行緒
-//                    isFirst = false;
-//                }
-//
-//            }
-//        });
 
         //截圖按鈕按下後的指令
         ScreenShot.setOnClickListener(new View.OnClickListener() {
@@ -529,6 +506,8 @@ public class USChartActivity extends AppCompatActivity {
                             RawData_temp = RawData;
                             RF_modeFiFOQueue.add(RawData); //建立給RF-mode執行緒的Queue
                             FindMaxFiFOQueue.add(RawData); //建立給FindMax使用的Queue
+                            FindMaxlocFiFOQueue.add(RawData); //建立給FindMaxloc使用的Queue
+
                             int[] GrayScaleData = M_modeDataProcessing(RawData); //M-mode data前處理
                             M_modeFiFOQueue.add(GrayScaleData); //建立給M-mode執行緒的Queue
                             // 判斷儲存功能啟動
@@ -770,6 +749,7 @@ public class USChartActivity extends AppCompatActivity {
                     //從Queue取得RF-mode data
                     try {
                         RF_modeFIFOData = RF_modeFiFOQueue.take();
+                        FindMaxlocFiFOQueue.add(RF_modeFIFOData); //建立給FindMaxloc的Queue
                         Log.i(TAG, "run: UsbFrameFiFOQueue.take();");
                     } catch (InterruptedException e) {
                         e.printStackTrace();
@@ -777,7 +757,7 @@ public class USChartActivity extends AppCompatActivity {
                     //畫出RF-mode訊號圖
                     if (RF_modeFIFOData != null & isDataProcessRunning & isRF_mode & !isM_mode) {
                         float x = NeedleTipRF;
-                        MPCharting(i, RF_modeFIFOData);
+                        MPCharting(i, RF_modeFIFOData,maxvalueloc);
                         mChart.invalidate();
 
                     }
@@ -786,37 +766,13 @@ public class USChartActivity extends AppCompatActivity {
                     }
                     i++;
                     timeEnd = System.currentTimeMillis();
-                    Log.i("RFChartingThread", "Success.");
+                    executiveTime = timeEnd-timeStart;
+                    Log.i("RF_modeDisplayThread", "Frame Rate:"+ (float)(1/(executiveTime*0.001)) + " hz");
                 }
             }
         }).start();
     }
 
-    public void TrackChartThread(){
-        new Thread(new Runnable() {
-            @RequiresApi(api = Build.VERSION_CODES.N)
-            public void run() {
-                int i = 0;
-
-                while (isRunning) {
-                    timeStart = System.currentTimeMillis();
-                    //從Queue取得RF-mode data
-
-                    //畫出RF-mode訊號圖
-                    if (isDataProcessRunning & isRF_mode & !isM_mode) {
-                        TrackCharting(maxvalueloc);
-                        TrackChart.invalidate();
-                    }
-                    else if (i == 5){
-                        i = 0;
-                    }
-                    i++;
-                    timeEnd = System.currentTimeMillis();
-                    Log.i("TrackChartingThread", "Success.");
-                }
-            }
-        }).start();
-    }
 
     public void Signal_MaximumThread(){
         new Thread(new Runnable() {
@@ -837,12 +793,12 @@ public class USChartActivity extends AppCompatActivity {
                     //畫出RF-mode訊號圖Math.round((max_loc*6.16/1000)*100/100);
                     if (FindMaxFIFOData != null & isDataProcessRunning) {
                         max_value = FindMax(FindMaxFIFOData);//尋找最大值
-                        maxvalueloc = (int) FindMaxloc(FindMaxFIFOData); //尋找最大值位置
                         min_value = FindMin(FindMaxFIFOData);//尋找最小值
+                        maxvalueloc = (int) FindMaxloc(FindMaxFIFOData); //尋找最大值位置
                     }
                     timeEnd = System.currentTimeMillis();
 
-                    double max_value_= max_value*1.8/4096; //將振幅從點數轉成V
+                    max_value_= max_value*1.8/4096; //將振幅從點數轉成V
                     double min_value_ = min_value*1.8/4096; //將振幅從點數轉成V
 
                     double vpp = max_value_-min_value_; // 計算peak to peak
@@ -857,68 +813,20 @@ public class USChartActivity extends AppCompatActivity {
             }
         }).start();
     }
-    private void TrackCharting(int max_location){
-        String[] stringTmp = new String[displayDataSize];
-        final String[] xLable = new String[displayDataSize];
-        ArrayList<Entry> line_ = new ArrayList<>();
-        for (int i=0; i<displayDataSize; i++){
-            if (i<max_location-50 || i>max_location+50){
-                line_.add(new Entry(i,-Amplitude));
-            }else{
-                line_.add(new Entry(i,Amplitude));
-            }
-        }
-
-        LineDataSet set2 = new LineDataSet(line_,"Tracking Data");
-        set2.setFillAlpha(255);
-        set2.setLineWidth(0.5f); //設定線寬
-        set2.setColor(Color.CYAN); //設定曲線顏色
-        set2.setDrawCircles(false); //設定是否顯示座標點的小圓圈
-        ArrayList<ILineDataSet> dataSets= new  ArrayList<>(); //
-        dataSets.add(set2); //
 
 
-        LineData  data_ = new LineData(dataSets);
-        XAxis xAxis_ = TrackChart.getXAxis(); // 取得 TrackChart 的x軸資訊
-        YAxis yAxis_ = TrackChart.getAxisLeft(); // 取得 TrackChart 的左邊y軸資訊
-        YAxis yAxisR_ = TrackChart.getAxisRight(); // 取得 TrackChart 的右邊y軸資訊
-        yAxisR_.setEnabled(false);
-        float maxXLabel,minYLabel,maxYLabel;
-        minYLabel = -Amplitude;
-        maxYLabel = Amplitude;
-        maxXLabel = (int)Math.round(Depth/6.16*1000);
-
-        xAxis_.setAxisMaximum(maxXLabel);
-        yAxis_.setAxisMinimum(minYLabel); // start at zero
-        yAxis_.setAxisMaximum(maxYLabel); // the axis maximum is 100
-        yAxis_.setTextColor(Color.BLACK);
-        yAxis_.setGranularity(1f); // interval 1
-        yAxis_.setLabelCount(9, true); // force 6 labels
-
-        IAxisValueFormatter iAxisValueFormatter = new IAxisValueFormatter() {
-            @Override
-            public String getFormattedValue(float v, AxisBase axisBase) {
-                int index = (int) v;
-                if (index < 0 || index >= displayDataSize) {
-                    return "";
-                } else {
-                    return xLable[Math.abs((int)v)];
-                }
-            }
-        };
-        xAxis_.setValueFormatter(iAxisValueFormatter);
-        xAxis_.setLabelCount(11, true);
-        TrackChart.setData(data_);
-        TrackChart.getData().setHighlightEnabled(false);
-        TrackChart.setVisibleXRangeMaximum(displayDataSize);
-
-    }
-    private void MPCharting(int j, double[] gainData){
+    private void MPCharting(int j, double[] gainData, int max_location){
 
         String[] stringTmp = new String[displayDataSize];
         final String[] xLable = new String[displayDataSize];
+
+
         ArrayList<Entry> line = new ArrayList<>();
+        ArrayList<Entry> boxline = new ArrayList<>();
+        ArrayList<Entry> boxline_1 = new ArrayList<>();
 
+
+        /**輸入資料↓*/
         for(int i =0; i<displayDataSize; i++) {
             float value = (float) (gainData[i] * 1.8 / 4096); //double轉float
             line.add(new Entry(i,value)); //輸入x,y值，x=點數, y=振幅
@@ -929,33 +837,77 @@ public class USChartActivity extends AppCompatActivity {
             xLable[i] = String.valueOf((float) Math.round(xfloat*100)/100); //x軸距離座標轉字串
         }
 
+        for(int i=0; i<displayDataSize; i++){
+            if (i<max_location-50 || i>max_location+50){
+                boxline.add(new Entry(i, (float) 0));
+                boxline_1.add(new Entry(i, (float) 0));
+            }else{
+                boxline.add(new Entry(i, (float) Amplitude));
+                boxline_1.add(new Entry(i, (float) -Amplitude));
+            }
+        }
+
+
+        /**輸入資料↑*/
+
         LineDataSet set1 = new LineDataSet(line,"AMP DATA");
         set1.setFillAlpha(110); //設定曲線下區域的顏色
         set1.setLineWidth(1f); //設定線寬
         set1.setColor(Color.BLACK); //設定曲線顏色
         set1.setDrawCircles(false); //設定是否顯示座標點的小圓圈
+        set1.setDrawFilled(false);//使用範圍背景填充(預設不使用)
         ArrayList<ILineDataSet> dataSets= new  ArrayList<>(); //
         dataSets.add(set1); //
+        if (isTracking){
+            LineDataSet set2 = new LineDataSet(boxline, "trackingbox");
+            set2.setFillAlpha(110); //設定曲線下區域的顏色
+            set2.setLineWidth(0f); //設定線寬
+            set2.setColor(Color.GREEN); //設定曲線顏色
+            set2.setDrawFilled(true);//使用範圍背景填充(預設不使用)
+            set2.setFillColor(Color.rgb(188, 203, 176));
+            set2.setDrawCircles(false);
+            dataSets.add(set2);
 
-        LineData data = new LineData(dataSets);
-        XAxis xAxis = mChart.getXAxis();
-        YAxis yAxis = mChart.getAxisLeft();
-        YAxis yAxisR = mChart.getAxisRight();
-        yAxisR.setEnabled(false);
-        yAxis.setTextSize(11.5f);// set the text size
-        xAxis.setTextSize(11.5f);
+            LineDataSet set3 = new LineDataSet(boxline_1, "trackingbox");
+            set3.setFillAlpha(110); //設定曲線下區域的顏色
+            set3.setLineWidth(0f); //設定線寬
+            set3.setColor(Color.GREEN); //設定曲線顏色
+            set3.setDrawFilled(true);//使用範圍背景填充(預設不使用)
+            set3.setFillColor(Color.rgb(188, 203, 176));
+            set3.setDrawCircles(false);
+            dataSets.add(set3);
+        }
+
+
+        /**設定圖表框架↓*/
+        YAxis leftAxis = mChart.getAxisLeft();//設置Y軸(左)
+        YAxis rightAxis = mChart.getAxisRight();//設置Y軸(右)
+        rightAxis.setEnabled(false);//讓右邊Y消失
+        XAxis xAxis = mChart.getXAxis();//設定X軸
+        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);//將x軸表示字移到底下
+        xAxis.setLabelCount(3,false);//設定X軸上要有幾個標籤
+        mChart.getDescription().setEnabled(false);//讓右下角文字消失
+//      xAxis.setEnabled(false);//去掉X軸數值
+//      xAxis.setLabelRotationAngle(-45f);//讓字變成斜的
+        xAxis.setDrawGridLines(false);//將X軸格子消失掉
+        /**設定圖表框架↑*/
+
+
         float minYLabel, maxYLabel, maxXLabel;
+
 
         minYLabel = -Amplitude;
         maxYLabel = Amplitude;
         maxXLabel = (int)Math.round(Depth/6.16*1000);
 
+
+
         xAxis.setAxisMaximum(maxXLabel);
-        yAxis.setAxisMinimum(minYLabel); // start at zero
-        yAxis.setAxisMaximum(maxYLabel); // the axis maximum is 100
-        yAxis.setTextColor(Color.BLACK);
-        yAxis.setGranularity(1f); // interval 1
-        yAxis.setLabelCount(9, true); // force 6 labels
+        leftAxis.setAxisMinimum(minYLabel); // start at zero
+        leftAxis.setAxisMaximum(maxYLabel); // the axis maximum is 100
+        leftAxis.setTextColor(Color.BLACK);
+        leftAxis.setGranularity(1f); // interval 1
+        leftAxis.setLabelCount(9, true); // force 6 labels
 
         if (j == 5){
 //            if (isTuohy && !isStraight){
@@ -1004,7 +956,9 @@ public class USChartActivity extends AppCompatActivity {
 
         xAxis.setValueFormatter(iAxisValueFormatter);
         xAxis.setLabelCount(11, true);
-        mChart.setData(data);
+
+        LineData lineData = new LineData(dataSets);
+        mChart.setData(lineData);
         mChart.getData().setHighlightEnabled(false);
         //mChart.setVisibleXRangeMaximum(AdjustLength.get());
         mChart.setVisibleXRangeMaximum(displayDataSize);
@@ -1453,6 +1407,23 @@ public class USChartActivity extends AppCompatActivity {
                             SingleRecordOn.set(false);
                         }
                     }, 200);
+                }
+            }
+        });
+    }
+
+    private void TrackingSetup(){
+        Tracking.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (TrackingOn.get() == false) {
+                    TrackingOn.set(true);
+                    isTracking = true;
+                    Tracking.setTextColor(Color.rgb(255, 0, 0)); //儲存按鈕顏色變化（紅）
+                } else {
+                    TrackingOn.set(false);
+                    isTracking = false;
+                    dataSaveButton.setTextColor(Color.rgb(0, 0, 0)); //儲存按鈕顏色變化（黑）
                 }
             }
         });

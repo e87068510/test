@@ -84,7 +84,7 @@ public class USChartActivity extends AppCompatActivity {
     boolean isFirst = true;
 
     ImageButton button_ReceiveData;
-    ToggleButton toggle_ReceiveData,toggle_Saved;
+    ToggleButton toggle_ReceiveData;
 
 
     private boolean forceClaim = true;
@@ -96,7 +96,7 @@ public class USChartActivity extends AppCompatActivity {
     private int dataSize = PacketSize/2;
     private byte[] PacketBuffer = new byte[PacketSize];
     boolean isRunning = false;
-    boolean isDataProcessRunning = false;
+    boolean isDataProcessRunning = true;
     boolean isRecord = false;
     boolean isSingleSave = false; //初始化是否有進行單筆存取
     boolean isTracking = false; //初始化是否有按下追蹤按鈕
@@ -165,10 +165,11 @@ public class USChartActivity extends AppCompatActivity {
     //    AtomicBoolean RF_modeOn = new AtomicBoolean(true);
     boolean isRF_mode = true;
     boolean isM_mode = false;
-    private Button SaveSingle;
     private Button Tracking;
 //    boolean isTuohy = false;
 //    boolean isStraight = false;
+    boolean isPressed=false;
+
 
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -184,7 +185,6 @@ public class USChartActivity extends AppCompatActivity {
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     private void initialSetup(){
-        button_ReceiveData = findViewById(R.id.read_message);  //開始顯示RF/M-mode按鈕
         toggle_ReceiveData = findViewById(R.id.toggleButton); // 建立一個可以切換模式的按鈕
 //        max_editText = (EditText) findViewById(R.id.max_editText);
 //        min_editText = (EditText) findViewById(R.id.min_editText);
@@ -206,9 +206,7 @@ public class USChartActivity extends AppCompatActivity {
 
         //M-mode對比調整介面
         M_modeSeekBar = (SeekBar) findViewById(R.id.M_modeContrastSeekBar);
-        //顯示Vpp數值大小
 
-        Vpp_max = (TextView) findViewById(R.id.Vpp);
         //發射頻率調整介面
 //        radioGroup = (RadioGroup)findViewById(R.id.radio_group);
 //        RadioButton radioButton1 = (RadioButton) findViewById(R.id.radioButton1);
@@ -223,8 +221,6 @@ public class USChartActivity extends AppCompatActivity {
 
         //截圖按鈕
         ScreenShot=(Button) findViewById(R.id.Screenshotbutton);
-        //存單筆按鈕
-        SaveSingle=(Button) findViewById(R.id.SaveSingleButton);
         //追蹤按鈕
         Tracking=(Button) findViewById(R.id.TrackingButton);
         //RF-mode顯示介面
@@ -287,43 +283,35 @@ public class USChartActivity extends AppCompatActivity {
         dataSaveToFile = new DataSaveToFile(this);
         imageSaveToFile = new DataSaveToFile(this);
         SaveRawDataSetup();
-        SaveSingleRawDataSetup();
         TrackingSetup(); //初始化設定 去確保按鈕是否有按下
         //TGC設定
-        TGCsetup();
+
+        Log.i(TAG, "Get counter, New thread START");
+
+        deviceConnection = usbManager.openDevice(device);
+        Log.i(TAG, "Device connected.");
+        usbInterface = device.getInterface(0);
+        endpointOut = usbInterface.getEndpoint(0);
+        endpointIn = usbInterface.getEndpoint(1);
+        deviceConnection.claimInterface(usbInterface, forceClaim);
+        Log.i(TAG, "deviceConnection.claimInterface");
+
+        isRunning = true;
+        isRF_mode = true;
+        isM_mode = false;
+        RF_modeDisplayButton.setTextColor(Color.rgb(255, 0, 0));
+        Thread usbrecieveThread = new Thread(new UsbReceiveThread());
+        usbrecieveThread.start(); //接收USB data執行緒
+        DataProcessingThread(); //data前處理執行緒
+        //Signal_MaximumThread(); //尋找最大值執行緒
+        RFChartingThread(); //RF-mode執行緒
+        //TrackChartThread(); //疊tracking上去
+        M_modeDisplayThread(); //M-mode執行緒
 
         toggle_ReceiveData.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (isChecked){
-                    Log.i(TAG, "Get counter, New thread START");
                     isDataProcessRunning = !isDataProcessRunning;
-
-                    if (isFirst) {
-                        deviceConnection = usbManager.openDevice(device);
-                        Log.i(TAG, "Device connected.");
-                        usbInterface = device.getInterface(0);
-                        endpointOut = usbInterface.getEndpoint(0);
-                        endpointIn = usbInterface.getEndpoint(1);
-                        deviceConnection.claimInterface(usbInterface, forceClaim);
-                        Log.i(TAG, "deviceConnection.claimInterface");
-
-                        isRunning = true;
-                        isRF_mode = true;
-                        isM_mode = false;
-                        RF_modeDisplayButton.setTextColor(Color.rgb(255, 0, 0));
-                        Thread usbrecieveThread = new Thread(new UsbReceiveThread());
-                        usbrecieveThread.start(); //接收USB data執行緒
-                        DataProcessingThread(); //data前處理執行緒
-                        Signal_MaximumThread(); //尋找最大值執行緒
-                        RFChartingThread(); //RF-mode執行緒
-                        //TrackChartThread(); //疊tracking上去
-                        M_modeDisplayThread(); //M-mode執行緒
-                        isFirst = false;
-                    }
-                }else{
-                    isDataProcessRunning = !isDataProcessRunning;
-                }
             }
         });
 
@@ -594,8 +582,9 @@ public class USChartActivity extends AppCompatActivity {
     //M-mode data前處理
     @RequiresApi(api = Build.VERSION_CODES.N)
     private int[] M_modeDataProcessing(double[] RawData){
-        double[] envelopeData = Demodulation(RawData); //包絡峰處理
-        int[] Log10toGrayScaleData = Log10toGrayScale(envelopeData); //log壓縮 8bits data
+        //double[] envelopeData = Demodulation(RawData); //包絡峰處理
+        double[] rootsquare = RootSquare(RawData);// 平方跟處理
+        int[] Log10toGrayScaleData = Log10toGrayScale(rootsquare); //log壓縮 8bits data
         return Log10toGrayScaleData; //回傳Ｍ-mode 8bits data
     }
 
@@ -715,6 +704,14 @@ public class USChartActivity extends AppCompatActivity {
         return demodulatedWave; //回傳包絡峰data
     }
 
+    private double[] RootSquare(double[] convData){
+        int DisplayDepth = (int)Math.round(Depth/6.16*1000);
+        double[] Rootsquare = new double[displayDataSize];
+        for(int i=0; i<displayDataSize; i++){
+            Rootsquare[i] = Math.sqrt(Math.pow(convData[i],2));
+        }
+        return Rootsquare; // 回傳平方根號後資料
+    }
     //log壓縮 8bits data
     @NotNull
     @RequiresApi(api = Build.VERSION_CODES.N)
@@ -774,45 +771,45 @@ public class USChartActivity extends AppCompatActivity {
     }
 
 
-    public void Signal_MaximumThread(){
-        new Thread(new Runnable() {
-
-            @RequiresApi(api = Build.VERSION_CODES.N)
-            public void run() {
-                while (isRunning) {
-                    timeStart = System.currentTimeMillis();
-                    //從Queue取得RF-mode data
-                    try {
-                        FindMaxFIFOData = FindMaxFiFOQueue.take();
-                        Log.i(TAG, "run: FindMaxRawData.take();");
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    double max_value=0;
-                    double min_value=0;
-                    //畫出RF-mode訊號圖Math.round((max_loc*6.16/1000)*100/100);
-                    if (FindMaxFIFOData != null & isDataProcessRunning) {
-                        max_value = FindMax(FindMaxFIFOData);//尋找最大值
-                        min_value = FindMin(FindMaxFIFOData);//尋找最小值
-                        maxvalueloc = (int) FindMaxloc(FindMaxFIFOData); //尋找最大值位置
-                    }
-                    timeEnd = System.currentTimeMillis();
-
-                    max_value_= max_value*1.8/4096; //將振幅從點數轉成V
-                    double min_value_ = min_value*1.8/4096; //將振幅從點數轉成V
-
-                    double vpp = max_value_-min_value_; // 計算peak to peak
-                    BigDecimal bd = new BigDecimal(vpp).setScale(2, RoundingMode.HALF_UP); //取小數點下兩位的方法
-
-                    double val1 = bd.doubleValue();
-
-                    Vpp_max.setText(val1+"V");
-
-                    Log.i(TAG, "Max value:" + val1);
-                }
-            }
-        }).start();
-    }
+//    public void Signal_MaximumThread(){
+//        new Thread(new Runnable() {
+//
+//            @RequiresApi(api = Build.VERSION_CODES.N)
+//            public void run() {
+//                while (isRunning) {
+//                    timeStart = System.currentTimeMillis();
+//                    //從Queue取得RF-mode data
+//                    try {
+//                        FindMaxFIFOData = FindMaxFiFOQueue.take();
+//                        Log.i(TAG, "run: FindMaxRawData.take();");
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+//                    double max_value=0;
+//                    double min_value=0;
+//                    //畫出RF-mode訊號圖Math.round((max_loc*6.16/1000)*100/100);
+//                    if (FindMaxFIFOData != null & isDataProcessRunning) {
+//                        max_value = FindMax(FindMaxFIFOData);//尋找最大值
+//                        min_value = FindMin(FindMaxFIFOData);//尋找最小值
+//                        maxvalueloc = (int) FindMaxloc(FindMaxFIFOData); //尋找最大值位置
+//                    }
+//                    timeEnd = System.currentTimeMillis();
+//
+//                    max_value_= max_value*1.8/4096; //將振幅從點數轉成V
+//                    double min_value_ = min_value*1.8/4096; //將振幅從點數轉成V
+//
+//                    double vpp = max_value_-min_value_; // 計算peak to peak
+//                    BigDecimal bd = new BigDecimal(vpp).setScale(2, RoundingMode.HALF_UP); //取小數點下兩位的方法
+//
+//                    double val1 = bd.doubleValue();
+//
+//                    Vpp_max.setText(val1+"V");
+//
+//                    Log.i(TAG, "Max value:" + val1);
+//                }
+//            }
+//        }).start();
+//    }
 
 
     private void MPCharting(int j, double[] gainData, int max_location){
@@ -822,8 +819,8 @@ public class USChartActivity extends AppCompatActivity {
 
 
         ArrayList<Entry> line = new ArrayList<>();
-        ArrayList<Entry> boxline = new ArrayList<>();
-        ArrayList<Entry> boxline_1 = new ArrayList<>();
+        ArrayList<Entry> boxline = new ArrayList<>();//畫出追蹤線的data
+        ArrayList<Entry> boxline_1 = new ArrayList<>();//畫出追蹤線的data
 
 
         /**輸入資料↓*/
@@ -859,7 +856,7 @@ public class USChartActivity extends AppCompatActivity {
         ArrayList<ILineDataSet> dataSets= new  ArrayList<>(); //
         dataSets.add(set1); //
         if (isTracking){
-            LineDataSet set2 = new LineDataSet(boxline, "trackingbox");
+            LineDataSet set2 = new LineDataSet(boxline, "trackingbox_upper");
             set2.setFillAlpha(110); //設定曲線下區域的顏色
             set2.setLineWidth(0f); //設定線寬
             set2.setColor(Color.GREEN); //設定曲線顏色
@@ -868,7 +865,7 @@ public class USChartActivity extends AppCompatActivity {
             set2.setDrawCircles(false);
             dataSets.add(set2);
 
-            LineDataSet set3 = new LineDataSet(boxline_1, "trackingbox");
+            LineDataSet set3 = new LineDataSet(boxline_1, "trackingbox_lower");
             set3.setFillAlpha(110); //設定曲線下區域的顏色
             set3.setLineWidth(0f); //設定線寬
             set3.setColor(Color.GREEN); //設定曲線顏色
@@ -880,6 +877,8 @@ public class USChartActivity extends AppCompatActivity {
 
 
         /**設定圖表框架↓*/
+        float minYLabel, maxYLabel, maxXLabel;
+
         YAxis leftAxis = mChart.getAxisLeft();//設置Y軸(左)
         YAxis rightAxis = mChart.getAxisRight();//設置Y軸(右)
         rightAxis.setEnabled(false);//讓右邊Y消失
@@ -890,10 +889,6 @@ public class USChartActivity extends AppCompatActivity {
 //      xAxis.setEnabled(false);//去掉X軸數值
 //      xAxis.setLabelRotationAngle(-45f);//讓字變成斜的
         xAxis.setDrawGridLines(false);//將X軸格子消失掉
-        /**設定圖表框架↑*/
-
-
-        float minYLabel, maxYLabel, maxXLabel;
 
 
         minYLabel = -Amplitude;
@@ -903,11 +898,13 @@ public class USChartActivity extends AppCompatActivity {
 
 
         xAxis.setAxisMaximum(maxXLabel);
-        leftAxis.setAxisMinimum(minYLabel); // start at zero
-        leftAxis.setAxisMaximum(maxYLabel); // the axis maximum is 100
+        leftAxis.setAxisMinimum(minYLabel); // 設定y軸最小值
+        leftAxis.setAxisMaximum(maxYLabel); // 設定y軸最大值
         leftAxis.setTextColor(Color.BLACK);
         leftAxis.setGranularity(1f); // interval 1
-        leftAxis.setLabelCount(9, true); // force 6 labels
+        leftAxis.setLabelCount(9, true); // force 9 labels
+        /**設定圖表框架↑*/
+
 
         if (j == 5){
 //            if (isTuohy && !isStraight){
@@ -1389,28 +1386,7 @@ public class USChartActivity extends AppCompatActivity {
             }
         });
     }
-    Handler handler_ = new Handler();
-    private void SaveSingleRawDataSetup(){
-        SaveSingle.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (SingleRecordOn.get() == false) {
-                    SingleRecordOn.set(true);
-                    isSingleSave = true;
-                    FileFolderNameDate = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()); //新增儲存路徑資料夾
-                    SaveSingle.setTextColor(Color.rgb(0, 201, 87)); //儲存按鈕顏色變化（綠）
-                    SaveSingle.setText("Saved!");
-                    handler_.postDelayed(new Runnable() {
-                        public void run() {
-                            SaveSingle.setTextColor(Color.rgb(0, 0, 0)); //儲存按鈕顏色變化（綠）
-                            SaveSingle.setText("SaveSingle!");
-                            SingleRecordOn.set(false);
-                        }
-                    }, 200);
-                }
-            }
-        });
-    }
+
 
     private void TrackingSetup(){
         Tracking.setOnClickListener(new View.OnClickListener() {
@@ -1460,33 +1436,5 @@ public class USChartActivity extends AppCompatActivity {
 //        dataSaveButton.setTextColor(Color.rgb(0, 0, 0)); //儲存按鈕顏色變化（黑）
     }
 
-    private double FindMax(double[] array){
-        double max_value=0;
-        for (int i = 150; i < array.length-100; i++) {
-            if (array[i] > max_value) {
-                max_value = array[i];
-            }
-        }
-        return max_value;
-    }
-    private double FindMaxloc(double[] array){
-        double max_value=0;
-        double max_value_loc=0;
-        for (int i = 150; i < array.length-100; i++) {
-            if (array[i] > max_value) {
-                max_value = array[i];
-                max_value_loc=i;
-            }
-        }
-        return max_value_loc;
-    }
-    private double FindMin(double[] array){
-        double min_value=0;
-        for (int i = 150; i < array.length-100; i++) {
-            if (array[i] < min_value) {
-                min_value = array[i];
-            }
-        }
-        return min_value;
-    }
+
 }

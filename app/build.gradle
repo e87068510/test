@@ -3,7 +3,7 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion 29
     defaultConfig {
-        applicationId "com.itri.usRFandM_mode_v2"
+        applicationId "com.itri.Clinical_v1"
         minSdkVersion 21
         targetSdkVersion 29
         versionCode 1

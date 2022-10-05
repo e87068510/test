@@ -5,7 +5,7 @@
     <application
         android:allowBackup="true"
         android:icon="@drawable/signal_processing"
-        android:label="US Testing"
+        android:label="US Clinical"
         android:roundIcon="@drawable/signal_processing"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">

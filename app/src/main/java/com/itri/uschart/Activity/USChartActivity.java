@@ -979,7 +979,7 @@ public class USChartActivity extends AppCompatActivity {
                         e.printStackTrace();
                     }
                     //顯示M-mode影像
-                    if(M_modeFIFOData != null & isDataProcessRunning & !isRF_mode & isM_mode){
+                    if(M_modeFIFOData != null & isDataProcessRunning & isRF_mode & !isM_mode){
                         final Bitmap resizedBitmap = M_modeDisplay(i, M_modeFIFOData); //將8bits data放入bitmap
                         DisplayLines = i;
                         handler.post(new Runnable() {
@@ -1011,7 +1011,7 @@ public class USChartActivity extends AppCompatActivity {
                             displayTime = 0.f;
                             i++;
                         }
-                        else if(!isM_mode & isRF_mode){
+                        else if(isM_mode & !isRF_mode){
                             i = 0;
                         }
                         else {

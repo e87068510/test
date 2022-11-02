@@ -38,17 +38,17 @@
                 android:resource="@xml/device_filter" />
         </activity>
 
-        <activity
-            android:name=".Activity.M_modeActivity2"
-            android:screenOrientation="fullSensor">
-            <intent-filter>
-                <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
-            </intent-filter>
+<!--        <activity-->
+<!--            android:name=".Activity.M_modeActivity2"-->
+<!--            android:screenOrientation="fullSensor">-->
+<!--            <intent-filter>-->
+<!--                <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />-->
+<!--            </intent-filter>-->
 
-            <meta-data
-                android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
-                android:resource="@xml/device_filter" />
-        </activity>
+<!--            <meta-data-->
+<!--                android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"-->
+<!--                android:resource="@xml/device_filter" />-->
+<!--        </activity>-->
 
 
     </application>

@@ -24,15 +24,61 @@
             android:layout_height="wrap_content"
             android:layout_centerHorizontal="true"
             android:layout_below="@id/usb_otg_support"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="300dp"
             android:text="Get Attached Device"
             android:textAppearance="@android:style/TextAppearance.DeviceDefault.Large" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/list_usb_otg"
             android:layout_width="match_parent"
-            android:layout_height="470dp"
+            android:layout_height="50dp"
             android:layout_below="@id/get_usb_otg_devices"
-            android:layout_marginTop="39dp" />
+            android:layout_marginTop="20dp" />
+
+        <TextView
+            android:id="@+id/KeyInINFO"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="50dp"
+            android:text="請輸入受試者資訊"
+            android:textSize="20sp" />
+
+        <EditText
+            android:id="@+id/EditName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="100dp"
+            android:ems="10"
+            android:inputType="textPersonName"
+            android:hint="請輸入姓名"
+            android:textSize="20sp" />
+
+        <EditText
+            android:id="@+id/EditNumber"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_marginStart="100dp"
+            android:layout_marginTop="150dp"
+            android:hint="請輸入病例號"
+            android:ems="10"
+            android:inputType="textVisiblePassword"
+            android:textSize="20sp" />
+
+        <EditText
+            android:id="@+id/Editgender"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_marginStart="100dp"
+            android:layout_marginTop="200dp"
+            android:hint="請輸入性別(男、女、其他)"
+            android:ems="10"
+            android:inputType="textVisiblePassword"
+            android:textSize="20sp" />
+
+
     </RelativeLayout>
 </android.support.constraint.ConstraintLayout>

@@ -29,6 +29,8 @@ import android.widget.RadioGroup;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.ToggleButton;
+import android.content.ComponentCallbacks2;
+
 
 import java.util.*;
 import java.lang.*;
@@ -65,9 +67,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
-public class USChartActivity extends AppCompatActivity {
-    private static final byte CR  = 0x0d;
-    private static final byte LF  = 0x0a;
+public class USChartActivity extends AppCompatActivity
+    implements ComponentCallbacks2{
+    //private static final byte CR  = 0x0d;
+    //private static final byte LF  = 0x0a;
     private static final String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
     private static String TAG = "UsbHost";
 
@@ -93,24 +96,19 @@ public class USChartActivity extends AppCompatActivity {
     AtomicInteger AdjustLength = new AtomicInteger(4096);
     private int PacketSize = 8192;
     private int dataSize = PacketSize/2;
+    private int displayDataSize = 2048;//原本是2048改成4096
+
     private byte[] PacketBuffer = new byte[PacketSize];
     boolean isRunning = false;
     boolean isDataProcessRunning = true;
     boolean isRecord = false;
-    boolean isSingleSave = false; //初始化是否有進行單筆存取
     boolean isTracking = false; //初始化是否有按下追蹤按鈕
     BlockingQueue<byte[]> UsbReceivedFiFOQueue = new LinkedBlockingQueue<byte[]>(Integer.MAX_VALUE); //USB data Queue
     BlockingQueue<double[]> RF_modeFiFOQueue = new LinkedBlockingQueue<double[]>(Integer.MAX_VALUE); //RF-mode data Queue
-    BlockingQueue<double[]> FindMaxFiFOQueue = new LinkedBlockingQueue<double[]>(Integer.MAX_VALUE); //FindMax data Queue
-    BlockingQueue<double[]> FindMaxlocFiFOQueue = new LinkedBlockingQueue<double[]>(Integer.MAX_VALUE); //FindMax data Queue
     BlockingQueue<int[]> M_modeFiFOQueue = new LinkedBlockingQueue<int[]>(Integer.MAX_VALUE);//Every //M-mode data Queue
     private byte[] UsbFIFOData = new byte[PacketSize];
     private double[] RF_modeFIFOData = new double[dataSize];
-    private double[] FindMaxFIFOData = new double[dataSize];
-    private double[] FindMaxlocFIFOData = new double[dataSize];
-    private double[] preRawData = new double[dataSize];
     private int[] M_modeFIFOData = new int[dataSize];
-    private int displayDataSize = 2048;
     byte[] dataSend;
 
 //    BlockingQueue<double[]> SaveRawDataQueue = new LinkedBlockingQueue<double[]>(Integer.MAX_VALUE);
@@ -118,7 +116,6 @@ public class USChartActivity extends AppCompatActivity {
 
     private long timeStart,timeEnd, executiveTime;
     private int maxvalueloc=100;
-    private double max_value_;
     private DataSaveToFile dataSaveToFile;
     private DataSaveToFile imageSaveToFile;
     private double[] SaveRawData = new double[dataSize];
@@ -130,21 +127,14 @@ public class USChartActivity extends AppCompatActivity {
 
 //    private EditText max_editText, min_editText, max_XeditText;
     private SeekBar gain_seekBar, Depth_seekBar, Amplitude_seekBar, M_modeSeekBar;
-    private SeekBar tgc1,tgc2,tgc3,tgc4,tgc5,tgc6,tgc7;
-    private Button TGCReset;
     private Button ScreenShot;
     private float displayTime = 0.f;
     private float Depth = 5.f;
-    private float NeedleTipRF;
-    private float NeedleTipM = 0.f;
     private float gain = 6.f;
     private float GainText = (float) (20 * Math.log10(gain));
     private double contrast = 1.5;
-    double[] RawData_temp; //RF-mode raw data前處理
     private float Amplitude = (float) (500 * 1.8 / 4096);
     private TextView GainDisplay, DepthDisplay, AmplitudeDisplay,M_modeSeekBarDisplay ;
-    private TextView Vpp_max;
-//    private TextView RecordTime;
     private TextView depth1, depth2, depth3, depth4, depth5;
     private TextView Time2, Time3, Time4, Time5;
     private int DepthX;
@@ -159,17 +149,23 @@ public class USChartActivity extends AppCompatActivity {
     private Button M_modeDisplayButton;
     private Button dataSaveButton;
     AtomicBoolean RecordOn = new AtomicBoolean(false);
-    AtomicBoolean SingleRecordOn = new AtomicBoolean(false);
-    AtomicBoolean TrackingOn = new AtomicBoolean(false);
-    //    AtomicBoolean RF_modeOn = new AtomicBoolean(true);
     boolean isRF_mode = true;
     boolean isM_mode = false;
     private Button Tracking;
-//    boolean isTuohy = false;
-//    boolean isStraight = false;
-    boolean isPressed=false;
 
 
+
+    @Override // 使UI為全螢幕顯示
+    protected void onResume() {
+        super.onResume();
+        getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN //隱藏狀態列
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION //隱藏導航欄
+                        | View.SYSTEM_UI_FLAG_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_IMMERSIVE);
+    }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
@@ -185,9 +181,7 @@ public class USChartActivity extends AppCompatActivity {
     @RequiresApi(api = Build.VERSION_CODES.O)
     private void initialSetup(){
         toggle_ReceiveData = findViewById(R.id.toggleButton); // 建立一個可以切換模式的按鈕
-//        max_editText = (EditText) findViewById(R.id.max_editText);
-//        min_editText = (EditText) findViewById(R.id.min_editText);
-//        max_XeditText = (EditText) findViewById(R.id.max_XeditText);
+
         //gain值調整介面
         gain_seekBar = (SeekBar) findViewById(R.id.Gain_seekBar);
         GainDisplay = (TextView) findViewById(R.id.Gain_textview);
@@ -295,8 +289,6 @@ public class USChartActivity extends AppCompatActivity {
         Log.i(TAG, "deviceConnection.claimInterface");
 
         isRunning = true;
-        isRF_mode = true;
-        isM_mode = false;
         RF_modeDisplayButton.setTextColor(Color.rgb(255, 0, 0));
         Thread usbrecieveThread = new Thread(new UsbReceiveThread());
         usbrecieveThread.start(); //接收USB data執行緒
@@ -478,13 +470,8 @@ public class USChartActivity extends AppCompatActivity {
                     if (UsbFIFOData != null) {
                         double[] RawData = DataProcessing(UsbFIFOData); //RF-mode raw data前處理
                         
-                        //double[] RawData_temp=DataProcessing(UsbFIFOData);
                         if (isDataProcessRunning) {
-                            RawData_temp = RawData;
                             RF_modeFiFOQueue.add(RawData); //建立給RF-mode執行緒的Queue
-                            FindMaxFiFOQueue.add(RawData); //建立給FindMax使用的Queue
-                            FindMaxlocFiFOQueue.add(RawData); //建立給FindMaxloc使用的Queue
-
                             int[] GrayScaleData = M_modeDataProcessing(RawData); //M-mode data前處理
                             M_modeFiFOQueue.add(GrayScaleData); //建立給M-mode執行緒的Queue
                             // 判斷儲存功能啟動
@@ -494,13 +481,7 @@ public class USChartActivity extends AppCompatActivity {
                             } else if (!isRecord) {
                                 i = 0; //raw data 儲存檔名順序歸零
                             }
-                        }else{
-                            if (isSingleSave){
-                                SaveSingleRawData(RawData_temp);
-                                isSingleSave=false;
-                            }
                         }
-
 
                     }
                     try {
@@ -721,22 +702,20 @@ public class USChartActivity extends AppCompatActivity {
             public void run() {
                 int i = 0;
 
-                while (isRunning) {
+                while(isRunning)
+                {
                     timeStart = System.currentTimeMillis();
                     //從Queue取得RF-mode data
                     try {
                         RF_modeFIFOData = RF_modeFiFOQueue.take();
-                        FindMaxlocFiFOQueue.add(RF_modeFIFOData); //建立給FindMaxloc的Queue
                         Log.i(TAG, "run: UsbFrameFiFOQueue.take();");
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                     //畫出RF-mode訊號圖
                     if (RF_modeFIFOData != null & isDataProcessRunning & isRF_mode & !isM_mode) {
-                        float x = NeedleTipRF;
                         MPCharting(i, RF_modeFIFOData,maxvalueloc);
                         mChart.invalidate();
-
                     }
                     else if (i == 10){
                         i = 0;
@@ -745,7 +724,6 @@ public class USChartActivity extends AppCompatActivity {
                     timeEnd = System.currentTimeMillis();
                     executiveTime = timeEnd-timeStart;
                     Log.i("RF_modeDisplayThread", "Frame Rate:"+ (float)(1/(executiveTime*0.001)) + " hz");
-
 
                 }
             }
@@ -1140,23 +1118,63 @@ public class USChartActivity extends AppCompatActivity {
         dataSaveToFile.extelnalPrivateCreateFoler(FileFolderNameDate,rawDataFileName,  Arrays.toString(stringTmp)); //存檔
 
     }
-    //可以存單筆資料
 
-    private void SaveSingleRawData(double[] saveRawData) {
-        int RecordLength ;
-        RecordLength= (int)Math.round(Depth/6.16*1000); //儲存深度
 
-        String[] stringTmp = new String[RecordLength]; //轉string
-        for(int i =0; i<RecordLength; i++) {
-            float value = (float) saveRawData[i]* gain;
-            stringTmp[i] = Float.toString(value);
-        }
-        String rawDataFileName = (new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date())+"_RF"); //檔名設定
-        dataSaveToFile.extelnalPrivateCreateFoler(FileFolderNameDate,rawDataFileName,  Arrays.toString(stringTmp)); //存檔
 
-//        SaveSingle.setText("SaveSingle");
-//        dataSaveButton.setTextColor(Color.rgb(0, 0, 0)); //儲存按鈕顏色變化（黑）
-    }
-
+//    public void onTrimMemory(int level) {
+//
+//        // Determine which lifecycle or system event was raised.
+//        switch (level) {
+//
+//            case ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN:
+//
+//                /*
+//                   Release any UI objects that currently hold memory.
+//
+//                   The user interface has moved to the background.
+//                */
+//
+//                break;
+//
+//            case ComponentCallbacks2.TRIM_MEMORY_RUNNING_MODERATE:
+//            case ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW:
+//            case ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL:
+//
+//                /*
+//                   Release any memory that your app doesn't need to run.
+//
+//                   The device is running low on memory while the app is running.
+//                   The event raised indicates the severity of the memory-related event.
+//                   If the event is TRIM_MEMORY_RUNNING_CRITICAL, then the system will
+//                   begin killing background processes.
+//                */
+//
+//                break;
+//
+//            case ComponentCallbacks2.TRIM_MEMORY_BACKGROUND:
+//            case ComponentCallbacks2.TRIM_MEMORY_MODERATE:
+//            case ComponentCallbacks2.TRIM_MEMORY_COMPLETE:
+//
+//                /*
+//                   Release as much memory as the process can.
+//
+//                   The app is on the LRU list and the system is running low on memory.
+//                   The event raised indicates where the app sits within the LRU list.
+//                   If the event is TRIM_MEMORY_COMPLETE, the process will be one of
+//                   the first to be terminated.
+//                */
+//
+//                break;
+//
+//            default:
+//                /*
+//                  Release any non-critical data structures.
+//
+//                  The app received an unrecognized memory level value
+//                  from the system. Treat this as a generic low-memory message.
+//                */
+//                break;
+//        }
+//    }
 
 }

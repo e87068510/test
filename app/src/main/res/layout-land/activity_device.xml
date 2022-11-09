@@ -30,11 +30,12 @@
         android:id="@+id/button"
         android:layout_width="139dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="80dp"
-        android:layout_marginTop="8dp"
-        android:layout_toEndOf="@+id/radio_group"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="730dp"
+        android:layout_toEndOf="@+id/toggleButton"
         android:text="RECORD ON"
-        android:background="#B9BAC5"
+        android:background="@drawable/button_type"
+
         android:textSize="16sp" />
     <TextView
         android:id="@+id/RecordTime"
@@ -51,33 +52,33 @@
         android:id="@+id/Screenshotbutton"
         android:layout_width="139dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="40dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="730dp"
         android:layout_toEndOf="@+id/RecordTime"
         android:text="ScreenShot"
-        android:background="#B9BAC5"
+        android:background="@drawable/button_type"
         android:textSize="16sp" />
 
     <Button
         android:id="@+id/RF_modeButton"
         android:layout_width="139dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="40dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="730dp"
         android:layout_toEndOf="@+id/Screenshotbutton"
         android:text="RF-mode"
-        android:background="#B9BAC5"
+        android:background="@drawable/button_type"
         android:textSize="16sp" />
 
     <Button
         android:id="@+id/M_modeButton"
         android:layout_width="139dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="40dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="730dp"
         android:layout_toEndOf="@+id/RF_modeButton"
         android:text="M-mode"
-        android:background="#B9BAC5"
+        android:background="@drawable/button_type"
         android:textSize="16sp"
         />
 
@@ -85,11 +86,11 @@
         android:id="@+id/TrackingButton"
         android:layout_width="139dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="40dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="730dp"
         android:layout_toEndOf="@+id/M_modeButton"
         android:text="Tracking"
-        android:background="#B9BAC5"
+        android:background="@drawable/button_type"
         android:textSize="16sp"
         />
 
@@ -99,8 +100,8 @@
         android:layout_width="1002dp"
         android:layout_height="280dp"
         android:layout_below="@+id/read_message"
-        android:layout_marginStart="250dp"
-        android:layout_marginTop="70dp"
+        android:layout_marginStart="300dp"
+        android:layout_marginTop="50dp"
         android:layout_marginEnd="15dp" />
 
     <com.github.mikephil.charting.charts.LineChart
@@ -457,7 +458,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_marginStart="20dp"
-        android:layout_marginTop="350dp"
+        android:layout_marginTop="380dp"
         android:textSize="16sp" />
 
     <SeekBar
@@ -466,7 +467,7 @@
         android:layout_width="165dp"
         android:layout_height="35dp"
         android:layout_marginStart="5dp"
-        android:layout_marginTop="380dp" />
+        android:layout_marginTop="410dp" />
 
     <TextView
         android:id="@+id/max_Xtextview"
@@ -474,7 +475,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_marginStart="20dp"
-        android:layout_marginTop="420dp"
+        android:layout_marginTop="450dp"
 
         android:textSize="16sp" />
 
@@ -484,7 +485,7 @@
         android:layout_width="165dp"
         android:layout_height="35dp"
         android:layout_marginStart="5dp"
-        android:layout_marginTop="450dp"
+        android:layout_marginTop="480dp"
          />
 
     <TextView
@@ -493,7 +494,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_marginStart="20dp"
-        android:layout_marginTop="490dp"
+        android:layout_marginTop="510dp"
         android:text="RF Y-axis: 500"
         android:textSize="16sp"
         />
@@ -503,7 +504,7 @@
         android:layout_width="165dp"
         android:layout_height="35dp"
         android:layout_marginStart="5dp"
-        android:layout_marginTop="520dp"
+        android:layout_marginTop="550dp"
 
         />
     <TextView
@@ -513,7 +514,7 @@
         android:text="M-mode Contrast"
         android:layout_alignParentTop="true"
         android:layout_marginStart="20dp"
-        android:layout_marginTop="560dp"
+        android:layout_marginTop="590dp"
         android:layout_marginBottom="8dp"
         android:textSize="16sp"
         />
@@ -525,7 +526,7 @@
         android:layout_height="35dp"
         android:layout_alignParentTop="true"
         android:layout_marginStart="5dp"
-        android:layout_marginTop="590dp"
+        android:layout_marginTop="620dp"
         android:layout_marginBottom="8dp" />
 
     <Button
@@ -534,7 +535,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_marginStart="20dp"
-        android:layout_marginTop="500dp"
+        android:layout_marginTop="530dp"
         android:text="Tuohy"
         android:textSize="16sp"
         android:visibility="gone"/>
@@ -557,7 +558,7 @@
         android:layout_height="352dp"
         android:layout_below="@+id/chart_line"
         android:layout_gravity="center"
-        android:layout_marginStart="250dp"
+        android:layout_marginStart="300dp"
         android:layout_marginTop="10dp"
         android:layout_marginEnd="15dp"
         android:background="#000000"
@@ -573,7 +574,7 @@
         android:layout_height="352dp"
         android:layout_below="@+id/chart_line"
         android:layout_gravity="center"
-        android:layout_marginStart="250dp"
+        android:layout_marginStart="300dp"
         android:layout_marginTop="10dp"
         android:layout_marginEnd="15dp"
         android:background="@android:color/transparent"
@@ -589,47 +590,47 @@
         android:layout_height="wrap_content"
         android:layout_below="@+id/chart_line"
         android:layout_marginTop="0dp"
-        android:layout_marginStart="180dp"
-        android:textSize="16sp" />
+        android:layout_marginStart="230dp"
+        android:textSize="14sp" />
     <TextView
         android:id="@+id/M_modeDepth2mm"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/chart_line"
         android:layout_marginTop="88dp"
-        android:layout_marginStart="180dp"
-        android:textSize="16sp"/>
+        android:layout_marginStart="230dp"
+        android:textSize="14sp"/>
     <TextView
         android:id="@+id/M_modeDepth4mm"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/chart_line"
         android:layout_marginTop="176dp"
-        android:layout_marginStart="180dp"
-        android:textSize="16sp"/>
+        android:layout_marginStart="230dp"
+        android:textSize="14sp"/>
     <TextView
         android:id="@+id/M_modeDepth6mm"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/chart_line"
         android:layout_marginTop="264dp"
-        android:layout_marginStart="180dp"
-        android:textSize="16sp"/>
+        android:layout_marginStart="230dp"
+        android:textSize="14sp"/>
     <TextView
         android:id="@+id/M_modeDepth8mm"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/chart_line"
         android:layout_marginTop="350dp"
-        android:layout_marginStart="180dp"
-        android:textSize="16sp" />
+        android:layout_marginStart="230dp"
+        android:textSize="14sp" />
     <TextView
         android:id="@+id/M_modeTime0s"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/chart_line"
         android:layout_marginTop="360dp"
-        android:layout_marginStart="248dp"
+        android:layout_marginStart="298dp"
         android:text="0 s" />
     <TextView
         android:id="@+id/M_modeTime2nds"
@@ -637,49 +638,61 @@
         android:layout_height="wrap_content"
         android:layout_below="@+id/chart_line"
         android:layout_marginTop="360dp"
-        android:layout_marginStart="498dp"
+        android:layout_marginStart="548dp"
 
-        android:textSize="16sp"/>
+        android:textSize="12sp"/>
     <TextView
         android:id="@+id/M_modeTime3rds"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/chart_line"
         android:layout_marginTop="360dp"
-        android:layout_marginStart="748dp"
+        android:layout_marginStart="798dp"
 
-        android:textSize="16sp"/>
+        android:textSize="12sp"/>
     <TextView
         android:id="@+id/M_modeTime4ths"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/chart_line"
         android:layout_marginTop="360dp"
-        android:layout_marginStart="998dp"
+        android:layout_marginStart="1048dp"
 
-        android:textSize="16sp"/>
+        android:textSize="12sp"/>
     <TextView
         android:id="@+id/M_modeTime5ths"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/chart_line"
         android:layout_marginTop="360dp"
-        android:layout_marginStart="1248dp"
-        android:textSize="16sp"/>
+        android:layout_marginStart="1298dp"
+        android:textSize="12sp"/>
 
 
     <ToggleButton
         android:id="@+id/toggleButton"
-        android:layout_width="120dp"
-        android:layout_height="80dp"
-        android:layout_marginStart="50dp"
-        android:layout_marginTop="15dp"
+        android:layout_width="139dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="150dp"
+        android:layout_marginTop="730dp"
+        android:layout_toEndOf="@+id/radio_group"
         android:text="ToggleButton"
         android:textOff="Stop"
         android:textOn="Run"
-        android:textSize="40dp"
+        android:textSize="20dp"
         android:background="@drawable/button_type"
         android:disabledAlpha="@android:integer/config_longAnimTime" />
+
+    <TextView
+        android:id="@+id/Name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="受試者:"
+        android:textSize="18dp"
+        android:textColor="#FFFFFF"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="50dp"
+        />
     />
 
 

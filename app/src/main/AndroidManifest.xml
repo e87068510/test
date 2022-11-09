@@ -8,7 +8,8 @@
         android:label="US Clinical"
         android:roundIcon="@drawable/signal_processing"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme">
+        android:theme="@style/AppTheme"
+        android:largeHeap="true">
         <activity
             android:name=".Activity.MainActivity"
             android:screenOrientation="fullSensor">
@@ -38,17 +39,6 @@
                 android:resource="@xml/device_filter" />
         </activity>
 
-<!--        <activity-->
-<!--            android:name=".Activity.M_modeActivity2"-->
-<!--            android:screenOrientation="fullSensor">-->
-<!--            <intent-filter>-->
-<!--                <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />-->
-<!--            </intent-filter>-->
-
-<!--            <meta-data-->
-<!--                android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"-->
-<!--                android:resource="@xml/device_filter" />-->
-<!--        </activity>-->
 
 
     </application>

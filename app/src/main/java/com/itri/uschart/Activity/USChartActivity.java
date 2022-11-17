@@ -8,6 +8,9 @@ import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Matrix;
+import android.widget.EditText;
+import android.widget.TextView;
+
 import android.graphics.Rect;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
@@ -152,6 +155,8 @@ public class USChartActivity extends AppCompatActivity
     boolean isRF_mode = true;
     boolean isM_mode = false;
     private Button Tracking;
+    TextView INFO; // 顯示受試者資料
+    EditText KEYINNAME;
 
 
 
@@ -415,6 +420,10 @@ public class USChartActivity extends AppCompatActivity
             public void onStopTrackingTouch(SeekBar seekBar) {
             }
         });
+        
+        INFO = findViewById(R.id.Name_keyin);
+        //KEYINNAME = findViewById(alert.R.id.EditName);
+        //INFO.setText(KEYINNAME.getText());
     }
 
     //接收USB data執行緒
@@ -469,7 +478,7 @@ public class USChartActivity extends AppCompatActivity
                     //raw data前處理
                     if (UsbFIFOData != null) {
                         double[] RawData = DataProcessing(UsbFIFOData); //RF-mode raw data前處理
-                        
+
                         if (isDataProcessRunning) {
                             RF_modeFiFOQueue.add(RawData); //建立給RF-mode執行緒的Queue
                             int[] GrayScaleData = M_modeDataProcessing(RawData); //M-mode data前處理
@@ -485,7 +494,7 @@ public class USChartActivity extends AppCompatActivity
 
                     }
                     try {
-                        Thread.sleep(5);
+                        Thread.sleep(20);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -882,6 +891,7 @@ public class USChartActivity extends AppCompatActivity
                     }
                     //顯示M-mode影像
                     if(M_modeFIFOData != null & isDataProcessRunning & !isRF_mode & isM_mode){
+
                         final Bitmap resizedBitmap = M_modeDisplay(i, M_modeFIFOData); //將8bits data放入bitmap
                         DisplayLines = i;
                         handler.post(new Runnable() {
@@ -903,15 +913,14 @@ public class USChartActivity extends AppCompatActivity
                                 }
                             }
                         });
-                        if (i == M_modeImageWidth) {
-                            i = 0; //M-mode顯示匡滿時歸零，重新從最左邊顯示M-mode
+                        if (i % M_modeImageWidth==0) {
                             //判斷儲存功能啟動，M-mode顯示匡滿時擷取螢幕影像
                             if (isRecord) {
                                 Bitmap M_modeScreenShot = getScreenShot();
                                 String M_modeImageName = (new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()) + "_" + Depth + "mm_" + Math.round(displayTime * 10.0) / 10.0 + "s.jpg");
                                 imageSaveToFile.extelnalPrivateCreateFolerImageCapture(FileFolderNameDate, M_modeImageName, M_modeScreenShot);
                             }
-                        //歸零
+                            i++;
                         }
                         else if (i == 0) {
                             displayTime = 0.f;
@@ -939,10 +948,22 @@ public class USChartActivity extends AppCompatActivity
     @RequiresApi(api = Build.VERSION_CODES.N)
     private Bitmap M_modeDisplay(int i, int[] grayScaleData) {
         //將8bits data放入二維0矩陣
-
-        for (int j = 0;j<M_modeImageHeight; j++) {
-            M_modeArray[j][(i%M_modeImageWidth)] = grayScaleData[j];
+//
+        if (i>=M_modeImageWidth){
+            for(int k = 0; k<M_modeImageWidth-1; k++){
+                for (int j = 0;j<M_modeImageHeight; j++) {
+                    M_modeArray[j][(k)] = M_modeArray[j][(k+1)];
+                }
+            }
+            for (int j = 0;j<M_modeImageHeight; j++) {
+                M_modeArray[j][(M_modeImageWidth-1)] = grayScaleData[j];
+            }
+        }else{
+            for (int j = 0;j<M_modeImageHeight; j++) {
+                M_modeArray[j][(i%M_modeImageWidth)] = grayScaleData[j];
+            }
         }
+
         Bitmap bitmap = ArrayToBitmap(M_modeArray); //將矩陣轉成bitmap
         return resizedBitmap(bitmap); //回傳bitmap
     }
@@ -1121,60 +1142,5 @@ public class USChartActivity extends AppCompatActivity
 
 
 
-//    public void onTrimMemory(int level) {
-//
-//        // Determine which lifecycle or system event was raised.
-//        switch (level) {
-//
-//            case ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN:
-//
-//                /*
-//                   Release any UI objects that currently hold memory.
-//
-//                   The user interface has moved to the background.
-//                */
-//
-//                break;
-//
-//            case ComponentCallbacks2.TRIM_MEMORY_RUNNING_MODERATE:
-//            case ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW:
-//            case ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL:
-//
-//                /*
-//                   Release any memory that your app doesn't need to run.
-//
-//                   The device is running low on memory while the app is running.
-//                   The event raised indicates the severity of the memory-related event.
-//                   If the event is TRIM_MEMORY_RUNNING_CRITICAL, then the system will
-//                   begin killing background processes.
-//                */
-//
-//                break;
-//
-//            case ComponentCallbacks2.TRIM_MEMORY_BACKGROUND:
-//            case ComponentCallbacks2.TRIM_MEMORY_MODERATE:
-//            case ComponentCallbacks2.TRIM_MEMORY_COMPLETE:
-//
-//                /*
-//                   Release as much memory as the process can.
-//
-//                   The app is on the LRU list and the system is running low on memory.
-//                   The event raised indicates where the app sits within the LRU list.
-//                   If the event is TRIM_MEMORY_COMPLETE, the process will be one of
-//                   the first to be terminated.
-//                */
-//
-//                break;
-//
-//            default:
-//                /*
-//                  Release any non-critical data structures.
-//
-//                  The app received an unrecognized memory level value
-//                  from the system. Treat this as a generic low-memory message.
-//                */
-//                break;
-//        }
-//    }
 
 }

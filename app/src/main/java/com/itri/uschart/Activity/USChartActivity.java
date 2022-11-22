@@ -494,7 +494,7 @@ public class USChartActivity extends AppCompatActivity
 
                     }
                     try {
-                        Thread.sleep(20);
+                        Thread.sleep(20); //20可
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -885,12 +885,12 @@ public class USChartActivity extends AppCompatActivity
                     //從Queue取得Ｍ-mode 8bits data
                     try {
                         M_modeFIFOData = M_modeFiFOQueue.take();
-                        Log.i(TAG, "run: UsbFrameFiFOQueue.take();");
+                        Log.i(TAG, "run:MmodeUsbFrameFiFOQueue.take();");
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                     //顯示M-mode影像
-                    if(M_modeFIFOData != null & isDataProcessRunning & !isRF_mode & isM_mode){
+                    if(M_modeFIFOData != null & isDataProcessRunning ){
 
                         final Bitmap resizedBitmap = M_modeDisplay(i, M_modeFIFOData); //將8bits data放入bitmap
                         DisplayLines = i;
@@ -921,22 +921,25 @@ public class USChartActivity extends AppCompatActivity
                                 imageSaveToFile.extelnalPrivateCreateFolerImageCapture(FileFolderNameDate, M_modeImageName, M_modeScreenShot);
                             }
                             i++;
-                        }
-                        else if (i == 0) {
-                            displayTime = 0.f;
+                        }else{
                             i++;
                         }
-                        else if(!isM_mode & isRF_mode){
-                            i = 0;
-                        }
-                        else {
-                            i++;
-                        }
+//                        else if (i == 0) {
+//                            displayTime = 0.f;
+//                            i++;
+//                        }
+//                        else if(isM_mode & !isRF_mode){
+//                            i = 0;
+//                        }
+
+                    }else{
+                        Log.i("M_modeDisplayThread", "dead!");
                     }
                     timeEnd = System.currentTimeMillis();
                     executiveTime = timeEnd-timeStart;
                     displayTime = displayTime + (float) (executiveTime * 0.001);
                     Log.i("M_modeDisplayThread", "Frame Rate:"+ (float)(1/(executiveTime*0.001)) + " hz");
+
 
                 }
             }
@@ -1132,7 +1135,7 @@ public class USChartActivity extends AppCompatActivity
 
         String[] stringTmp = new String[RecordLength]; //轉string
         for(int i =0; i<RecordLength; i++) {
-            float value = (float) saveRawData[i]* gain;
+            float value = (float) saveRawData[i];
             stringTmp[i] = Float.toString(value);
         }
         String rawDataFileName = (new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date())+"_RF(" + j + ")"); //檔名設定

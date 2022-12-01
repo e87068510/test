@@ -18,21 +18,14 @@
         android:src="@drawable/ic_send_black_24dp"
         android:visibility="gone" />
 
-    <RadioGroup
-        android:id="@+id/radio_group"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="15dp"
-        android:layout_marginStart="160dp"/>
+
 
     <Button
         android:id="@+id/button"
         android:layout_width="139dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="730dp"
-        android:layout_toEndOf="@+id/toggleButton"
+        android:layout_marginStart="40dp"
+        android:layout_marginTop="170dp"
         android:text="RECORD ON"
         android:background="@drawable/button_type"
 
@@ -41,7 +34,7 @@
         android:id="@+id/RecordTime"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="30dp"
+        android:layout_marginStart="40dp"
         android:layout_marginTop="20dp"
         android:layout_toEndOf="@id/button"
         android:text="Record Time: "
@@ -52,43 +45,17 @@
         android:id="@+id/Screenshotbutton"
         android:layout_width="139dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="730dp"
-        android:layout_toEndOf="@+id/RecordTime"
+        android:layout_marginStart="40dp"
+        android:layout_marginTop="240dp"
         android:text="ScreenShot"
         android:background="@drawable/button_type"
         android:textSize="16sp" />
-
-    <Button
-        android:id="@+id/RF_modeButton"
-        android:layout_width="139dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="730dp"
-        android:layout_toEndOf="@+id/Screenshotbutton"
-        android:text="RF-mode"
-        android:background="@drawable/button_type"
-        android:textSize="16sp" />
-
-    <Button
-        android:id="@+id/M_modeButton"
-        android:layout_width="139dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="730dp"
-        android:layout_toEndOf="@+id/RF_modeButton"
-        android:text="M-mode"
-        android:background="@drawable/button_type"
-        android:textSize="16sp"
-        />
-
     <Button
         android:id="@+id/TrackingButton"
         android:layout_width="139dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="730dp"
-        android:layout_toEndOf="@+id/M_modeButton"
+        android:layout_marginStart="40dp"
+        android:layout_marginTop="310dp"
         android:text="Tracking"
         android:background="@drawable/button_type"
         android:textSize="16sp"
@@ -114,327 +81,15 @@
         android:layout_marginEnd="15dp"
         android:visibility="gone" />
 
-    <TextView
-        android:id="@+id/max_textview"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/read_message"
-        android:layout_marginStart="23dp"
-        android:layout_marginTop="8dp"
-        android:text="MAX"
-        android:textSize="16sp"
-        android:visibility="gone"/>
 
-    <EditText
-        android:id="@+id/max_editText"
-        android:layout_width="50dp"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/max_textview"
-        android:layout_marginStart="10dp"
-        android:ems="10"
-        android:gravity="center"
-        android:inputType="numberSigned"
-        android:textSize="16sp"
-        android:text="1024"
-        android:visibility="gone"/>
 
-    <TextView
-        android:id="@+id/min_textview"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/read_message"
-        android:layout_toRightOf="@+id/max_textview"
-        android:layout_marginStart="28dp"
-        android:layout_marginTop="8dp"
-        android:text="MIN"
-        android:textSize="16sp"
-        android:visibility="gone"/>
 
-    <EditText
-        android:id="@+id/min_editText"
-        android:layout_width="50dp"
-        android:layout_height="wrap_content"
-        android:ems="10"
-        android:inputType="numberSigned"
-        android:gravity="center"
-        android:layout_below="@+id/min_textview"
-        android:layout_toRightOf="@+id/max_textview"
-        android:text="-1024"
-        android:textSize="16sp"
-        android:layout_marginStart="15dp"
-        android:visibility="gone"/>
 
-    <LinearLayout
-        android:layout_width="172dp"
-        android:layout_height="663dp"
-        android:layout_below="@+id/min_editText"
-        android:orientation="vertical"
-        android:visibility="gone">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:visibility="gone">
-
-            <TextView
-                android:id="@+id/Depth_textview"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:layout_marginTop="15dp"
-                android:text="DEPTH"
-                android:textSize="14sp"
-                android:visibility="visible" />
-
-            <SeekBar
-                android:id="@+id/depth_seekBar"
-                style="@android:style/Widget.DeviceDefault.Light.SeekBar"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_marginStart="5dp"
-                android:layout_marginTop="18dp"
-                android:max="4096"
-                android:progress="0"
-                android:visibility="visible" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/gain_textview"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:layout_marginTop="15dp"
-                android:text="GAIN"
-                android:textSize="14sp"
-                android:visibility="visible" />
-
-            <SeekBar
-                android:id="@+id/seekBar"
-                style="@android:style/Widget.DeviceDefault.Light.SeekBar"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="5dp"
-                android:layout_marginTop="18dp"
-                android:max="10"
-                android:progress="0"
-                android:visibility="visible" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/tgc1_textview"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:layout_marginTop="15dp"
-                android:text="TGC 1"
-                android:textSize="14sp"
-                android:visibility="visible" />
-
-            <SeekBar
-                android:id="@+id/tgc1_seekBar"
-                style="@android:style/Widget.DeviceDefault.Light.SeekBar"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_marginStart="5dp"
-                android:layout_marginTop="18dp"
-                android:max="10"
-                android:progress="0"
-                android:visibility="visible" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/tgc2_textview"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:text="TGC 2"
-                android:textSize="14sp"
-                android:visibility="visible" />
-
-            <SeekBar
-                android:id="@+id/tgc2_seekBar"
-                style="@android:style/Widget.DeviceDefault.Light.SeekBar"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_marginStart="5dp"
-                android:max="10"
-                android:progress="0"
-                android:visibility="visible" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/tgc3_textview"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:text="TGC 3"
-                android:textSize="14sp"
-                android:visibility="visible" />
-
-            <SeekBar
-                android:id="@+id/tgc3_seekBar"
-                style="@android:style/Widget.DeviceDefault.Light.SeekBar"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_marginStart="5dp"
-                android:max="10"
-                android:progress="0"
-                android:visibility="visible" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/tgc4_textview"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:text="TGC 4"
-                android:textSize="14sp"
-                android:visibility="visible" />
-
-            <SeekBar
-                android:id="@+id/tgc4_seekBar"
-                style="@android:style/Widget.DeviceDefault.Light.SeekBar"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_marginStart="5dp"
-                android:max="10"
-                android:progress="0"
-                android:visibility="visible" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/tgc5_textview"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:text="TGC 5"
-                android:textSize="14sp"
-                android:visibility="visible" />
-
-            <SeekBar
-                android:id="@+id/tgc5_seekBar"
-                style="@android:style/Widget.DeviceDefault.Light.SeekBar"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_marginStart="5dp"
-                android:max="10"
-                android:progress="0"
-                android:visibility="visible" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/tgc6_textview"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:text="TGC 6"
-                android:textSize="14sp"
-                android:visibility="visible" />
-
-            <SeekBar
-                android:id="@+id/tgc6_seekBar"
-                style="@android:style/Widget.DeviceDefault.Light.SeekBar"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_marginStart="5dp"
-                android:max="10"
-                android:progress="0"
-                android:visibility="visible" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/tgc7_textview"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:text="TGC 7"
-                android:textSize="14sp"
-                android:visibility="visible" />
-
-            <SeekBar
-                android:id="@+id/tgc7_seekBar"
-                style="@android:style/Widget.DeviceDefault.Light.SeekBar"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_marginStart="5dp"
-                android:max="10"
-                android:progress="0"
-                android:visibility="visible" />
-        </LinearLayout>
-
-        <Button
-            android:id="@+id/tgcreset"
-            android:layout_width="wrap_content"
-            android:layout_height="35dp"
-            android:layout_gravity="center_horizontal"
-            android:text="TGC RESET"
-            android:textSize="10sp"
-            android:visibility="gone" />
-    </LinearLayout>
-
-    <Button
-        android:id="@+id/button5"
-        android:layout_width="80dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:layout_toEndOf="@id/button"
-        android:text="M_mode"
-        android:textSize="10sp"
-        tools:layout_marginStart="20dp"
-        android:visibility="gone"/>
 
     <TextView
         android:id="@+id/Chart_Depth"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_toEndOf="@+id/M_modeButton"
         android:layout_alignParentTop="true"
         android:layout_marginStart="90dp"
         android:layout_marginTop="50dp"
@@ -446,7 +101,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
-        android:layout_marginStart="175dp"
+        android:layout_marginStart="250dp"
         android:layout_marginTop="210dp"
         android:textSize="11.5sp"
         android:textColor="#000000"
@@ -457,77 +112,48 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="380dp"
-        android:textSize="16sp" />
-
-    <SeekBar
-        android:id="@+id/Gain_seekBar"
-        style="@android:style/Widget.DeviceDefault.Light.SeekBar"
-        android:layout_width="165dp"
-        android:layout_height="35dp"
-        android:layout_marginStart="5dp"
-        android:layout_marginTop="410dp" />
-
+        android:layout_marginStart="80dp"
+        android:layout_marginTop="420dp"
+        android:textSize="20sp" />
     <TextView
         android:id="@+id/max_Xtextview"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="450dp"
-
-        android:textSize="16sp" />
-
-    <SeekBar
-        android:id="@+id/Depth_seekBar"
-        style="@android:style/Widget.DeviceDefault.Light.SeekBar"
-        android:layout_width="165dp"
-        android:layout_height="35dp"
-        android:layout_marginStart="5dp"
-        android:layout_marginTop="480dp"
-         />
-
+        android:layout_marginStart="80dp"
+        android:layout_marginTop="510dp"
+        android:textSize="20sp" />
     <TextView
         android:id="@+id/max_Ytextview"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="510dp"
-        android:text="RF Y-axis: 500"
-        android:textSize="16sp"
-        />
-    <SeekBar
-        android:id="@+id/Amplitude_seekBar"
-        style="@android:style/Widget.DeviceDefault.Light.SeekBar"
-        android:layout_width="165dp"
-        android:layout_height="35dp"
-        android:layout_marginStart="5dp"
-        android:layout_marginTop="550dp"
+        android:layout_marginStart="85dp"
+        android:layout_marginTop="600dp"
+        android:textSize="20sp"
+        android:textColor="#FFFFFF"/>
 
-        />
     <TextView
         android:id="@+id/M_modeContrastTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="M-mode Contrast"
         android:layout_alignParentTop="true"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="590dp"
-        android:layout_marginBottom="8dp"
-        android:textSize="16sp"
+        android:layout_marginStart="25dp"
+        android:layout_marginTop="650dp"
+        android:textSize="18sp"
+        android:textColor="#FFFFFF"
         />
 
-    <SeekBar
-        android:id="@+id/M_modeContrastSeekBar"
-        style="@android:style/Widget.DeviceDefault.Light.SeekBar"
-        android:layout_width="165dp"
-        android:layout_height="35dp"
-        android:layout_alignParentTop="true"
-        android:layout_marginStart="5dp"
-        android:layout_marginTop="620dp"
-        android:layout_marginBottom="8dp" />
+<!--    <SeekBar-->
+<!--        android:id="@+id/M_modeContrastSeekBar"-->
+<!--        style="@android:style/Widget.DeviceDefault.Light.SeekBar"-->
+<!--        android:layout_width="165dp"-->
+<!--        android:layout_height="35dp"-->
+<!--        android:layout_alignParentTop="true"-->
+<!--        android:layout_marginStart="5dp"-->
+<!--        android:layout_marginTop="620dp"-->
+<!--        android:layout_marginBottom="8dp" />-->
 
     <Button
         android:id="@+id/TuohyNeedleTip"
@@ -555,7 +181,7 @@
     <ImageView
         android:id="@+id/M_mode_Bitmap"
         android:layout_width="1002dp"
-        android:layout_height="352dp"
+        android:layout_height="400dp"
         android:layout_below="@+id/chart_line"
         android:layout_gravity="center"
         android:layout_marginStart="300dp"
@@ -571,7 +197,7 @@
     <ImageView
         android:id="@+id/NeedleTipPosition"
         android:layout_width="1002dp"
-        android:layout_height="352dp"
+        android:layout_height="400dp"
         android:layout_below="@+id/chart_line"
         android:layout_gravity="center"
         android:layout_marginStart="300dp"
@@ -597,7 +223,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/chart_line"
-        android:layout_marginTop="88dp"
+        android:layout_marginTop="100dp"
         android:layout_marginStart="230dp"
         android:textSize="14sp"/>
     <TextView
@@ -605,7 +231,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/chart_line"
-        android:layout_marginTop="176dp"
+        android:layout_marginTop="200dp"
         android:layout_marginStart="230dp"
         android:textSize="14sp"/>
     <TextView
@@ -613,23 +239,24 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/chart_line"
-        android:layout_marginTop="264dp"
+        android:layout_marginTop="300dp"
         android:layout_marginStart="230dp"
         android:textSize="14sp"/>
+
     <TextView
         android:id="@+id/M_modeDepth8mm"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/chart_line"
-        android:layout_marginTop="350dp"
         android:layout_marginStart="230dp"
+        android:layout_marginTop="400dp"
         android:textSize="14sp" />
     <TextView
         android:id="@+id/M_modeTime0s"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/chart_line"
-        android:layout_marginTop="360dp"
+        android:layout_marginTop="410dp"
         android:layout_marginStart="298dp"
         android:text="0 s" />
     <TextView
@@ -637,7 +264,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/chart_line"
-        android:layout_marginTop="360dp"
+        android:layout_marginTop="410dp"
         android:layout_marginStart="548dp"
 
         android:textSize="12sp"/>
@@ -646,7 +273,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/chart_line"
-        android:layout_marginTop="360dp"
+        android:layout_marginTop="410dp"
         android:layout_marginStart="798dp"
 
         android:textSize="12sp"/>
@@ -655,7 +282,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/chart_line"
-        android:layout_marginTop="360dp"
+        android:layout_marginTop="410dp"
         android:layout_marginStart="1048dp"
 
         android:textSize="12sp"/>
@@ -664,7 +291,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/chart_line"
-        android:layout_marginTop="360dp"
+        android:layout_marginTop="410dp"
         android:layout_marginStart="1298dp"
         android:textSize="12sp"/>
 
@@ -673,8 +300,8 @@
         android:id="@+id/toggleButton"
         android:layout_width="139dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="150dp"
-        android:layout_marginTop="730dp"
+        android:layout_marginStart="40dp"
+        android:layout_marginTop="100dp"
         android:layout_toEndOf="@+id/radio_group"
         android:text="ToggleButton"
         android:textOff="Stop"
@@ -704,5 +331,102 @@
         android:layout_marginStart="100dp"
         android:layout_marginTop="50dp" />
 
+    <Button
+        android:id="@+id/gainplus"
+        android:layout_width="50dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="150dp"
+        android:layout_marginTop="410dp"
+        android:text="+"
+        android:textSize="18dp"/>
+
+    <Button
+        android:id="@+id/gainsub"
+        android:layout_width="50dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="410dp"
+        android:text="-"
+        android:textSize="20dp"/>
+    <TextView
+        android:id="@+id/Gain"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Gain"
+        android:layout_marginStart="25dp"
+        android:layout_marginTop="380dp"
+        android:textSize="20sp"
+        android:textColor="#FFFFFF" />
+    <Button
+        android:id="@+id/Depthplus"
+        android:layout_width="50dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="150dp"
+        android:layout_marginTop="500dp"
+        android:text="+"
+        android:textSize="18dp"/>
+
+    <Button
+        android:id="@+id/Depthsub"
+        android:layout_width="50dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="500dp"
+        android:text="-"
+        android:textSize="20dp"/>
+    <TextView
+        android:id="@+id/Depth"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Depth"
+        android:layout_marginStart="25dp"
+        android:layout_marginTop="470dp"
+        android:textSize="20sp"
+        android:textColor="#FFFFFF"/>
+
+    <Button
+        android:id="@+id/Ampplus"
+        android:layout_width="50dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="150dp"
+        android:layout_marginTop="590dp"
+        android:text="+"
+        android:textSize="18dp"/>
+
+    <Button
+        android:id="@+id/Ampsub"
+        android:layout_width="50dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="590dp"
+        android:text="-"
+        android:textSize="20dp"/>
+    <TextView
+        android:id="@+id/Amp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Amplitude"
+        android:layout_marginStart="25dp"
+        android:layout_marginTop="560dp"
+        android:textSize="20sp"
+        android:textColor="#FFFFFF"/>
+
+    <Button
+        android:id="@+id/Mmodecontrastplus"
+        android:layout_width="50dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="150dp"
+        android:layout_marginTop="680dp"
+        android:text="+"
+        android:textSize="18dp"/>
+
+    <Button
+        android:id="@+id/Mmodecontrastsub"
+        android:layout_width="50dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="680dp"
+        android:text="-"
+        android:textSize="20dp"/>
 
 </RelativeLayout>

@@ -135,7 +135,8 @@ public class USChartActivity extends AppCompatActivity
     private float Depth = 5.f;
     private float gain = 6.f;
     private float GainText = (float) (20 * Math.log10(gain));
-    private double contrast = 1.5;
+    public double contrast = 1.5;
+    private int contrast_i = 6; // *0.25 之前
     private float Amplitude = (float) (500 * 1.8 / 4096);
     private TextView GainDisplay, DepthDisplay, AmplitudeDisplay,M_modeSeekBarDisplay ;
     private TextView depth1, depth2, depth3, depth4, depth5;
@@ -143,14 +144,14 @@ public class USChartActivity extends AppCompatActivity
     private int DepthX;
     private String FileFolderNameDate;
 
+    private int Amplitude_p = 500;
     private int M_modeImageWidth = 900;
     private int M_modeImageHeight = 2048;
     int[][] M_modeArray = new int[M_modeImageHeight][M_modeImageWidth];
     int DisplayLines;
 
-    private Button RF_modeDisplayButton;
-    private Button M_modeDisplayButton;
     private Button dataSaveButton;
+    private Button Gainplus,Gainsub,Depthplus,Depthsub,Ampplus,Ampsub,Mmodecontrastplus,Mmodecontrastsub; //新增調整介面的按鈕資料
     AtomicBoolean RecordOn = new AtomicBoolean(false);
     boolean isRF_mode = true;
     boolean isM_mode = false;
@@ -188,28 +189,29 @@ public class USChartActivity extends AppCompatActivity
         toggle_ReceiveData = findViewById(R.id.toggleButton); // 建立一個可以切換模式的按鈕
 
         //gain值調整介面
-        gain_seekBar = (SeekBar) findViewById(R.id.Gain_seekBar);
+        //gain_seekBar = (SeekBar) findViewById(R.id.Gain_seekBar);
         GainDisplay = (TextView) findViewById(R.id.Gain_textview);
-
+        Gainplus = findViewById(R.id.gainplus);
+        Gainsub = findViewById(R.id.gainsub);
         //raw data 儲存按鈕
         dataSaveButton = (Button) findViewById(R.id.button);
 
         //深度調整介面
+        Depthplus = findViewById(R.id.Depthplus);
+        Depthsub = findViewById(R.id.Depthsub);
         DepthDisplay = (TextView) findViewById(R.id.max_Xtextview);
-        Depth_seekBar = (SeekBar) findViewById(R.id.Depth_seekBar);
 
         //振幅調整介面
+        Ampplus = findViewById(R.id.Ampplus);
+        Ampsub = findViewById(R.id.Ampsub);
         AmplitudeDisplay = (TextView) findViewById(R.id.max_Ytextview);
-        Amplitude_seekBar = (SeekBar) findViewById(R.id.Amplitude_seekBar);
 
         //M-mode對比調整介面
-        M_modeSeekBarDisplay = findViewById(R.id.M_modeContrastTextView);
-        M_modeSeekBar = (SeekBar) findViewById(R.id.M_modeContrastSeekBar);
-
+        Mmodecontrastplus = findViewById(R.id.Mmodecontrastplus);
+        Mmodecontrastsub = findViewById(R.id.Mmodecontrastsub);
         dataSend = new byte[2];
         dataSend[0] = 0x00;
-        dataSend[1] = 0X25; // 初始設定成20MHZ
-//        radioGroup.check(R.id.radioButton3);
+        dataSend[1] = 0X25; // 告知韌體設定成20MHZ
 
         //截圖按鈕
         ScreenShot=(Button) findViewById(R.id.Screenshotbutton);
@@ -262,9 +264,7 @@ public class USChartActivity extends AppCompatActivity
         TuohyNeedleTip = (Button)findViewById(R.id.TuohyNeedleTip);
         StraightNeedleTip = (Button)findViewById(R.id.StraightNeedleTip);
 
-        //RF/M-mode顯示切換鈕
-        RF_modeDisplayButton = (Button) findViewById(R.id.RF_modeButton);
-        M_modeDisplayButton = (Button) findViewById(R.id.M_modeButton);
+
 
         //USB設定
         device = getIntent().getParcelableExtra("Device");
@@ -275,8 +275,6 @@ public class USChartActivity extends AppCompatActivity
         usbManager.requestPermission(device, mPermissionIntent);
         toggle_ReceiveData.setTextColor(Color.rgb(215,73, 20));
 
-        //RF/M-mode切換設定
-        DisplaySetup();
         //存檔設定
         dataSaveToFile = new DataSaveToFile(this);
         imageSaveToFile = new DataSaveToFile(this);
@@ -294,7 +292,6 @@ public class USChartActivity extends AppCompatActivity
         Log.i(TAG, "deviceConnection.claimInterface");
 
         isRunning = true;
-        RF_modeDisplayButton.setTextColor(Color.rgb(255, 0, 0));
         Thread usbrecieveThread = new Thread(new UsbReceiveThread());
         usbrecieveThread.start(); //接收USB data執行緒
         DataProcessingThread(); //data前處理執行緒
@@ -328,99 +325,183 @@ public class USChartActivity extends AppCompatActivity
         });
         //存單筆按鈕按下後的指令
 
-
-        //gain值調整指令
-        gain_seekBar.setMin(1);
-        gain_seekBar.setMax(10);
-        gain_seekBar.setProgress(6);
-        GainDisplay.setText("Gain: " + Math.round(GainText * 10.0) / 10.0 + " dB");
-        GainDisplay.setTextColor(Color.rgb(255,255, 255));
-
-        gain_seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+        /////////////////////////////Gain 按鈕設定區域//////////////////////////////////////////
+        Gainplus.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                gain = i;
-                GainText = (float) (20 * Math.log10(i));
-                GainDisplay.setText("Gain: " + Math.round(GainText * 10.0) / 10.0  + " dB");
-
-            }
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-            }
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
+            public void onClick(View v)
+            {
+                if(gain<10){
+                    gain++;
+                    GainText = (float)(20*Math.log10(gain));
+                    GainDisplay.setText( Math.round(GainText * 10.0) / 10.0 + " dB");
+                    GainDisplay.setTextColor(Color.rgb(255,255, 255));
+                }else{
+                    GainText = (float)(20*Math.log10(gain));
+                    GainDisplay.setText( Math.round(GainText * 10.0) / 10.0 + " dB");
+                    GainDisplay.setTextColor(Color.rgb(255,255, 255));
+                }
             }
         });
+        Gainsub.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v)
+            {
+                if(gain>1){
+                    gain--;
+                    GainText = (float)(20*Math.log10(gain));
+                    GainDisplay.setText( Math.round(GainText * 10.0) / 10.0 + " dB");
+                    GainDisplay.setTextColor(Color.rgb(255,255, 255));
+                }else{
+                    GainText = (float)(20*Math.log10(gain));
+                    GainDisplay.setText( Math.round(GainText * 10.0) / 10.0 + " dB");
+                    GainDisplay.setTextColor(Color.rgb(255,255, 255));
+                }
+            }
+        });
+        GainText = (float)(20*Math.log10(gain));
+        GainDisplay.setText( Math.round(GainText * 10.0) / 10.0 + " dB");
+        GainDisplay.setTextColor(Color.rgb(255,255, 255));
 
+
+        /////////////////////////////Gain 按鈕設定區域//////////////////////////////////////////
 
         NeedleTipPosition.setImageBitmap(NeedleTipPositionDottedLine((int)Math.round(Depth)));
 
-        //深度調整指令
-        Depth_seekBar.setMin(4); //最小顯示深度
-        Depth_seekBar.setMax(12); //最大顯示深度
-        Depth_seekBar.setProgress(5); //初始顯示深度
-        DepthDisplay.setText("Depth: "+ Depth + " mm");
+        /////////////////////////////Depth 按鈕設定區域//////////////////////////////////////////
+
+        Depthplus.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v)
+            {
+                if(Depth<12){
+                    Depth++;
+                    DepthDisplay.setText(Depth + " mm");
+                    DepthDisplay.setTextColor(Color.rgb(255,255, 255));
+                    depth1.setText(0.0 + " mm --");
+                    depth2.setText(Depth / 4 * 1 + " mm --");
+                    depth3.setText(Depth / 4 * 2 + " mm --");
+                    depth4.setText(Depth / 4 * 3 + " mm --");
+                    depth5.setText(Depth + " mm --");
+                }else{
+                    DepthDisplay.setText(Depth + " mm");
+                    DepthDisplay.setTextColor(Color.rgb(255,255, 255));
+                    depth1.setText(0.0 + " mm --");
+                    depth2.setText(Depth / 4 * 1 + " mm --");
+                    depth3.setText(Depth / 4 * 2 + " mm --");
+                    depth4.setText(Depth / 4 * 3 + " mm --");
+                    depth5.setText(Depth + " mm --");
+                }
+            }
+        });
+        Depthsub.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v)
+            {
+                if(Depth>4){
+                    Depth--;
+                    DepthDisplay.setText(Depth + " mm");
+                    DepthDisplay.setTextColor(Color.rgb(255,255, 255));
+                    depth1.setText(0.0 + " mm --");
+                    depth2.setText(Depth / 4 * 1 + " mm --");
+                    depth3.setText(Depth / 4 * 2 + " mm --");
+                    depth4.setText(Depth / 4 * 3 + " mm --");
+                    depth5.setText(Depth + " mm --");
+                }else{
+                    DepthDisplay.setText(Depth + " mm");
+                    DepthDisplay.setTextColor(Color.rgb(255,255, 255));
+                    depth1.setText(0.0 + " mm --");
+                    depth2.setText(Depth / 4 * 1 + " mm --");
+                    depth3.setText(Depth / 4 * 2 + " mm --");
+                    depth4.setText(Depth / 4 * 3 + " mm --");
+                    depth5.setText(Depth + " mm --");
+                }
+            }
+        });
+
+        DepthDisplay.setText(Depth + " mm");
         DepthDisplay.setTextColor(Color.rgb(255,255, 255));
-        Depth_seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                Depth= i;
-                DepthDisplay.setText("Depth: " + Depth + "mm");
-                depth1.setText(0.0 + " mm --");
-                depth2.setText(Depth / 4 * 1 + " mm --");
-                depth3.setText(Depth / 4 * 2 + " mm --");
-                depth4.setText(Depth / 4 * 3 + " mm --");
-                depth5.setText(Depth + " mm --");
-                NeedleTipPosition.setImageBitmap(NeedleTipPositionDottedLine((int)Math.round(Depth)));
+        depth1.setText(0.0 + " mm --");
+        depth2.setText(Depth / 4 * 1 + " mm --");
+        depth3.setText(Depth / 4 * 2 + " mm --");
+        depth4.setText(Depth / 4 * 3 + " mm --");
+        depth5.setText(Depth + " mm --");
 
-                DepthX = (int) Math.round(Depth / 6.16 * 1000);
-            }
+        NeedleTipPosition.setImageBitmap(NeedleTipPositionDottedLine((int)Math.round(Depth)));
+
+        DepthX = (int) Math.round(Depth / 6.16 * 1000);
+
+        /////////////////////////////Depth 按鈕設定區域//////////////////////////////////////////
+
+        /////////////////////////////Amplitude 按鈕設定區域/////////////////////////////////////
+
+        Ampplus.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-            }
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
+            public void onClick(View v)
+            {
+                if(Amplitude_p<2300){
+                    Amplitude_p=Amplitude_p+200;
+                    Amplitude= (float) (Amplitude_p* 1.8 / 4096);
+                    AmplitudeDisplay.setText(Math.round(Amplitude * 100.0) / 100.0 + "V");
+                    AmplitudeDisplay.setTextColor(Color.rgb(255,255, 255));
+                }else{
+                    Amplitude= (float) (Amplitude_p* 1.8 / 4096);
+                    AmplitudeDisplay.setText(Math.round(Amplitude * 100.0) / 100.0 + "V");
+                    AmplitudeDisplay.setTextColor(Color.rgb(255,255, 255));
+                }
             }
         });
-
-        //振幅調整指令
-        Amplitude_seekBar.setMin(300); //最小顯示振幅
-        Amplitude_seekBar.setMax(2300); //最大顯示振幅
-        Amplitude_seekBar.setProgress(500); //初始顯示振幅
-        AmplitudeDisplay.setText("Amp: " + Math.round(Amplitude * 100.0) / 100.0 + "V");
-        AmplitudeDisplay.setTextColor(Color.rgb(255,255, 255));
-        Amplitude_seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+        Ampsub.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                Amplitude= (float) (i * 1.8 / 4096);
-                AmplitudeDisplay.setText("Amp: " + Math.round(Amplitude * 100.0) / 100.0 + "V");
-            }
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-            }
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
+            public void onClick(View v)
+            {
+                if(Amplitude_p>300){
+                    Amplitude_p=Amplitude_p-200;
+                    Amplitude= (float) (Amplitude_p* 1.8 / 4096);
+                    AmplitudeDisplay.setText(Math.round(Amplitude * 100.0) / 100.0 + "V");
+                    AmplitudeDisplay.setTextColor(Color.rgb(255,255, 255));
+                }else{
+                    Amplitude= (float) (Amplitude_p* 1.8 / 4096);
+                    AmplitudeDisplay.setText(Math.round(Amplitude * 100.0) / 100.0 + "V");
+                    AmplitudeDisplay.setTextColor(Color.rgb(255,255, 255));
+                }
             }
         });
+        Amplitude= (float) (Amplitude_p* 1.8 / 4096);
+        AmplitudeDisplay.setText(Math.round(Amplitude * 100.0) / 100.0 + "V");
+
+        /////////////////////////////Amplitude 按鈕設定區域//////////////////////////////////////////
 
         //M-mode對比度調整指令
-        M_modeSeekBar.setMin(1); //最小對比度
-        M_modeSeekBar.setMax(11); //最大對比度
-        M_modeSeekBar.setProgress(6); //初始對比度
-        M_modeSeekBarDisplay.setTextColor(Color.rgb(255,255, 255));
-        M_modeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+
+        Mmodecontrastplus.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                contrast = 0.25*i;
-            }
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-            }
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
+            public void onClick(View v)
+            {
+                if(contrast_i<11){
+                    contrast_i = contrast_i+1;
+                    contrast = contrast_i*0.25;
+                }else{
+                    contrast = contrast_i*0.25;
+                }
             }
         });
-        
+        Mmodecontrastsub.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v)
+            {
+                if(contrast_i>1){
+                    contrast_i = contrast_i-1;
+                    contrast = contrast_i*0.25;
+                }else{
+                    contrast = contrast_i*0.25;
+                }
+            }
+        });
+        contrast = contrast_i*0.25;
+
+
+
+
         INFO = findViewById(R.id.Name_keyin);
         //KEYINNAME = findViewById(alert.R.id.EditName);
         //INFO.setText(KEYINNAME.getText());
@@ -722,7 +803,7 @@ public class USChartActivity extends AppCompatActivity
                         e.printStackTrace();
                     }
                     //畫出RF-mode訊號圖
-                    if (RF_modeFIFOData != null & isDataProcessRunning & isRF_mode & !isM_mode) {
+                    if (RF_modeFIFOData != null & isDataProcessRunning) {
                         MPCharting(i, RF_modeFIFOData,maxvalueloc);
                         mChart.invalidate();
                     }
@@ -924,13 +1005,6 @@ public class USChartActivity extends AppCompatActivity
                         }else{
                             i++;
                         }
-//                        else if (i == 0) {
-//                            displayTime = 0.f;
-//                            i++;
-//                        }
-//                        else if(isM_mode & !isRF_mode){
-//                            i = 0;
-//                        }
 
                     }else{
                         Log.i("M_modeDisplayThread", "dead!");
@@ -1084,27 +1158,7 @@ public class USChartActivity extends AppCompatActivity
     };
 
 
-   //RF/M-mode顯示切換設定
-    private void DisplaySetup(){
-        RF_modeDisplayButton.setOnClickListener(new View.OnClickListener(){
-           public void onClick(View v)
-           {
-               isRF_mode = true;
-               isM_mode = false;
-               RF_modeDisplayButton.setTextColor(Color.rgb(255, 0, 0));
-               M_modeDisplayButton.setTextColor(Color.rgb(0, 0, 0));
-           }
-        });
-        M_modeDisplayButton.setOnClickListener(new View.OnClickListener(){
-            public void onClick(View v)
-            {
-                isRF_mode = false;
-                isM_mode = true;
-                RF_modeDisplayButton.setTextColor(Color.rgb(0, 0, 0));
-                M_modeDisplayButton.setTextColor(Color.rgb(255, 0, 0));
-            }
-        });
-    }
+
     //raw data 儲存功能設定
     private void SaveRawDataSetup() {
         dataSaveButton.setOnClickListener(new View.OnClickListener() {

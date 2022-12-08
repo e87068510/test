@@ -24,7 +24,6 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CompoundButton;
-import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RadioButton;
@@ -87,7 +86,6 @@ public class USChartActivity extends AppCompatActivity
     UsbEndpoint endpointIn;
     UsbEndpoint endpointOut;
 
-    boolean isFirst = true;
 
     ToggleButton toggle_ReceiveData;
 
@@ -99,7 +97,7 @@ public class USChartActivity extends AppCompatActivity
     AtomicInteger AdjustLength = new AtomicInteger(4096);
     private int PacketSize = 8192;
     private int dataSize = PacketSize/2;
-    private int displayDataSize = 2048;//原本是2048改成4096
+    private int displayDataSize = 2048;
 
     private byte[] PacketBuffer = new byte[PacketSize];
     boolean isRunning = false;
@@ -108,9 +106,12 @@ public class USChartActivity extends AppCompatActivity
     boolean isTracking = false; //初始化是否有按下追蹤按鈕
     BlockingQueue<byte[]> UsbReceivedFiFOQueue = new LinkedBlockingQueue<byte[]>(Integer.MAX_VALUE); //USB data Queue
     BlockingQueue<double[]> RF_modeFiFOQueue = new LinkedBlockingQueue<double[]>(Integer.MAX_VALUE); //RF-mode data Queue
+    BlockingQueue<double[]> FindMaxFiFOQueue = new LinkedBlockingQueue<double[]>(Integer.MAX_VALUE); //FindMax data Queue
     BlockingQueue<int[]> M_modeFiFOQueue = new LinkedBlockingQueue<int[]>(Integer.MAX_VALUE);//Every //M-mode data Queue
     private byte[] UsbFIFOData = new byte[PacketSize];
     private double[] RF_modeFIFOData = new double[dataSize];
+    private double[] FindMaxFIFOData = new double[dataSize];
+
     private int[] M_modeFIFOData = new int[dataSize];
     byte[] dataSend;
 
@@ -123,10 +124,8 @@ public class USChartActivity extends AppCompatActivity
     private DataSaveToFile imageSaveToFile;
     private double[] SaveRawData = new double[dataSize];
     private LineChart mChart,TrackChart;
-    private ImageView M_modeImage, NeedleTipPosition;
-    private Button TuohyNeedleTip, StraightNeedleTip;
+    private ImageView M_modeImage, NeedleTipPosition,TrackingMmode;
 
-    private RadioGroup radioGroup;
 
 //    private EditText max_editText, min_editText, max_XeditText;
     private SeekBar gain_seekBar, Depth_seekBar, Amplitude_seekBar, M_modeSeekBar;
@@ -145,7 +144,7 @@ public class USChartActivity extends AppCompatActivity
     private String FileFolderNameDate;
 
     private int Amplitude_p = 500;
-    private int M_modeImageWidth = 900;
+    private int M_modeImageWidth = 900; //原本是900
     private int M_modeImageHeight = 2048;
     int[][] M_modeArray = new int[M_modeImageHeight][M_modeImageWidth];
     int DisplayLines;
@@ -153,11 +152,9 @@ public class USChartActivity extends AppCompatActivity
     private Button dataSaveButton;
     private Button Gainplus,Gainsub,Depthplus,Depthsub,Ampplus,Ampsub,Mmodecontrastplus,Mmodecontrastsub; //新增調整介面的按鈕資料
     AtomicBoolean RecordOn = new AtomicBoolean(false);
-    boolean isRF_mode = true;
-    boolean isM_mode = false;
+    AtomicBoolean TrackingOn = new AtomicBoolean(false);
+
     private Button Tracking;
-    TextView INFO; // 顯示受試者資料
-    EditText KEYINNAME;
 
 
 
@@ -180,6 +177,14 @@ public class USChartActivity extends AppCompatActivity
         setContentView(R.layout.activity_device);
         this.getSupportActionBar().hide();
         initialSetup();
+        // 取得傳過來的bundle
+        Bundle bundle = getIntent().getExtras();
+        // 取得bundle中的name這個字串
+        String name_ = bundle.getString("name");
+
+        //連結介面檔中的元件
+        TextView INFO_name = findViewById(R.id.Name_keyin);; // 顯示受試者資料
+        INFO_name.setText(name_);
 
     }
 
@@ -188,8 +193,8 @@ public class USChartActivity extends AppCompatActivity
     private void initialSetup(){
         toggle_ReceiveData = findViewById(R.id.toggleButton); // 建立一個可以切換模式的按鈕
 
+
         //gain值調整介面
-        //gain_seekBar = (SeekBar) findViewById(R.id.Gain_seekBar);
         GainDisplay = (TextView) findViewById(R.id.Gain_textview);
         Gainplus = findViewById(R.id.gainplus);
         Gainsub = findViewById(R.id.gainsub);
@@ -209,6 +214,8 @@ public class USChartActivity extends AppCompatActivity
         //M-mode對比調整介面
         Mmodecontrastplus = findViewById(R.id.Mmodecontrastplus);
         Mmodecontrastsub = findViewById(R.id.Mmodecontrastsub);
+
+        // 設定韌體指令
         dataSend = new byte[2];
         dataSend[0] = 0x00;
         dataSend[1] = 0X25; // 告知韌體設定成20MHZ
@@ -259,12 +266,7 @@ public class USChartActivity extends AppCompatActivity
         //M-mode影像顯示介面
         M_modeImage = (ImageView) findViewById(R.id.M_mode_Bitmap);
         NeedleTipPosition = (ImageView) findViewById(R.id.NeedleTipPosition);
-
-        //
-        TuohyNeedleTip = (Button)findViewById(R.id.TuohyNeedleTip);
-        StraightNeedleTip = (Button)findViewById(R.id.StraightNeedleTip);
-
-
+        TrackingMmode = findViewById(R.id.TrackingMmode);
 
         //USB設定
         device = getIntent().getParcelableExtra("Device");
@@ -279,7 +281,8 @@ public class USChartActivity extends AppCompatActivity
         dataSaveToFile = new DataSaveToFile(this);
         imageSaveToFile = new DataSaveToFile(this);
         SaveRawDataSetup();
-        //TGC設定
+        TrackingSetup(); //初始化設定 去確保按鈕是否有按下
+
 
         Log.i(TAG, "Get counter, New thread START");
 
@@ -295,10 +298,15 @@ public class USChartActivity extends AppCompatActivity
         Thread usbrecieveThread = new Thread(new UsbReceiveThread());
         usbrecieveThread.start(); //接收USB data執行緒
         DataProcessingThread(); //data前處理執行緒
-        //Signal_MaximumThread(); //尋找最大值執行緒
+        Signal_MaximumThread(); //尋找最大值執行緒
         RFChartingThread(); //RF-mode執行緒
-        //TrackChartThread(); //疊tracking上去
         M_modeDisplayThread(); //M-mode執行緒
+
+
+
+
+        //KEYINNAME = findViewById(alert.R.id.EditName);
+        //INFO.setText(KEYINNAME.getText());
 
         toggle_ReceiveData.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -323,7 +331,6 @@ public class USChartActivity extends AppCompatActivity
                 imageSaveToFile.extelnalPrivateCreateFolerImageCapture("Screenshot",RF_modeImageName,RF_modeScreenShot);
             }
         });
-        //存單筆按鈕按下後的指令
 
         /////////////////////////////Gain 按鈕設定區域//////////////////////////////////////////
         Gainplus.setOnClickListener(new View.OnClickListener() {
@@ -366,7 +373,6 @@ public class USChartActivity extends AppCompatActivity
         /////////////////////////////Gain 按鈕設定區域//////////////////////////////////////////
 
         NeedleTipPosition.setImageBitmap(NeedleTipPositionDottedLine((int)Math.round(Depth)));
-
         /////////////////////////////Depth 按鈕設定區域//////////////////////////////////////////
 
         Depthplus.setOnClickListener(new View.OnClickListener() {
@@ -382,6 +388,8 @@ public class USChartActivity extends AppCompatActivity
                     depth3.setText(Depth / 4 * 2 + " mm --");
                     depth4.setText(Depth / 4 * 3 + " mm --");
                     depth5.setText(Depth + " mm --");
+                    NeedleTipPosition.setImageBitmap(NeedleTipPositionDottedLine((int)Math.round(Depth)));
+
                 }else{
                     DepthDisplay.setText(Depth + " mm");
                     DepthDisplay.setTextColor(Color.rgb(255,255, 255));
@@ -390,6 +398,8 @@ public class USChartActivity extends AppCompatActivity
                     depth3.setText(Depth / 4 * 2 + " mm --");
                     depth4.setText(Depth / 4 * 3 + " mm --");
                     depth5.setText(Depth + " mm --");
+                    NeedleTipPosition.setImageBitmap(NeedleTipPositionDottedLine((int)Math.round(Depth)));
+
                 }
             }
         });
@@ -406,6 +416,8 @@ public class USChartActivity extends AppCompatActivity
                     depth3.setText(Depth / 4 * 2 + " mm --");
                     depth4.setText(Depth / 4 * 3 + " mm --");
                     depth5.setText(Depth + " mm --");
+                    NeedleTipPosition.setImageBitmap(NeedleTipPositionDottedLine((int)Math.round(Depth)));
+
                 }else{
                     DepthDisplay.setText(Depth + " mm");
                     DepthDisplay.setTextColor(Color.rgb(255,255, 255));
@@ -414,6 +426,8 @@ public class USChartActivity extends AppCompatActivity
                     depth3.setText(Depth / 4 * 2 + " mm --");
                     depth4.setText(Depth / 4 * 3 + " mm --");
                     depth5.setText(Depth + " mm --");
+                    NeedleTipPosition.setImageBitmap(NeedleTipPositionDottedLine((int)Math.round(Depth)));
+
                 }
             }
         });
@@ -426,7 +440,6 @@ public class USChartActivity extends AppCompatActivity
         depth4.setText(Depth / 4 * 3 + " mm --");
         depth5.setText(Depth + " mm --");
 
-        NeedleTipPosition.setImageBitmap(NeedleTipPositionDottedLine((int)Math.round(Depth)));
 
         DepthX = (int) Math.round(Depth / 6.16 * 1000);
 
@@ -502,9 +515,7 @@ public class USChartActivity extends AppCompatActivity
 
 
 
-        INFO = findViewById(R.id.Name_keyin);
-        //KEYINNAME = findViewById(alert.R.id.EditName);
-        //INFO.setText(KEYINNAME.getText());
+
     }
 
     //接收USB data執行緒
@@ -562,6 +573,7 @@ public class USChartActivity extends AppCompatActivity
 
                         if (isDataProcessRunning) {
                             RF_modeFiFOQueue.add(RawData); //建立給RF-mode執行緒的Queue
+                            FindMaxFiFOQueue.add(RawData); //建立給FindMax使用的Queue
                             int[] GrayScaleData = M_modeDataProcessing(RawData); //M-mode data前處理
                             M_modeFiFOQueue.add(GrayScaleData); //建立給M-mode執行緒的Queue
                             // 判斷儲存功能啟動
@@ -821,10 +833,35 @@ public class USChartActivity extends AppCompatActivity
     }
 
 
+    public void Signal_MaximumThread(){
+        new Thread(new Runnable() {
+
+            @RequiresApi(api = Build.VERSION_CODES.N)
+            public void run() {
+                while (isRunning) {
+                    timeStart = System.currentTimeMillis();
+                    //從Queue取得RF-mode data
+                    try {
+                        FindMaxFIFOData = FindMaxFiFOQueue.take();
+                        Log.i(TAG, "run: FindMaxRawData.take();");
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    //畫出RF-mode訊號圖Math.round((max_loc*6.16/1000)*100/100);
+                    if (FindMaxFIFOData != null & isDataProcessRunning) {
+                        maxvalueloc = (int) FindMaxloc(FindMaxFIFOData); //尋找最大值位置
+                    }
+                    timeEnd = System.currentTimeMillis();
+
+                }
+            }
+        }).start();
+    }
 
 
     private void MPCharting(int j, double[] gainData, int max_location){
 
+        int width_i = 0; //初始設定第幾條Mmode要追蹤
         String[] stringTmp = new String[displayDataSize];
         final String[] xLable = new String[displayDataSize];
 
@@ -866,6 +903,9 @@ public class USChartActivity extends AppCompatActivity
         set1.setDrawFilled(false);//使用範圍背景填充(預設不使用)
         ArrayList<ILineDataSet> dataSets= new  ArrayList<>(); //
         dataSets.add(set1); //
+
+        width_i =width_i+1;
+
         if (isTracking){
             LineDataSet set2 = new LineDataSet(boxline, "trackingbox_upper");
             set2.setFillAlpha(110); //設定曲線下區域的顏色
@@ -974,10 +1014,13 @@ public class USChartActivity extends AppCompatActivity
                     if(M_modeFIFOData != null & isDataProcessRunning ){
 
                         final Bitmap resizedBitmap = M_modeDisplay(i, M_modeFIFOData); //將8bits data放入bitmap
+                        int maxvalueloc_mm = (int) (maxvalueloc*6.16/1000);
+                        final Bitmap MmodeTrackingBitmap = MmodeTracking(i,maxvalueloc_mm,Depth);
                         DisplayLines = i;
                         handler.post(new Runnable() {
                             public void run() {
                                 M_modeImage.setImageBitmap(resizedBitmap); //將bitmap放入imageview
+                                TrackingMmode.setImageBitmap(MmodeTrackingBitmap);
                                 //時間軸顯示
                                 if (DisplayLines == M_modeImageWidth / 4) {
                                     Time2.setText(Math.round(displayTime * 10.0) / 10.0 + "s");
@@ -1045,6 +1088,41 @@ public class USChartActivity extends AppCompatActivity
         return resizedBitmap(bitmap); //回傳bitmap
     }
 
+    private Bitmap MmodeTracking(int width_i, int loc,float depth){
+        int maxloc = (int)Math.round(140/depth*loc);// x 為 depth調整後的深度 loc 為 最大值位置;
+        int height = 140;
+        int width = 450;
+
+        //設定maxloc範圍 避免error
+        if (maxloc<5){
+            maxloc = 6;
+        }else if (maxloc>height){
+            maxloc = 135;
+        }
+
+        int width_normalized = (int)Math.round(width_i/(M_modeImageWidth/width)); // 由於Mmode的矩陣大小和tracking不一樣 所以要normalized
+
+        int[] DottedLine_ = new int[width * height]; //可以將矩陣大小縮小，以避免計算量過大
+
+        if (isTracking){
+            if (width_normalized>=width){
+                for (int i = width-9; i < width+1; i++){
+                    for(int j = maxloc-5; j < maxloc+5; j++){
+                        DottedLine_[width * j + i] = (100<< 24) | (0 << 16) | (255 << 8) | 0;
+                    }
+                }//若目前i到最大值，則固定出現在最右邊
+            }else{
+                for (int i = width_normalized-5; i < width_normalized+5; i++){
+                    for(int j = maxloc-5; j < maxloc+5; j++){
+                        DottedLine_[width * j + i] = (100 << 24) | (0 << 16) | (255 << 8) | 0;
+                    }
+                }
+            }
+        }
+        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        bitmap.setPixels(DottedLine_, 0, width, 0, 0, width, height );
+        return bitmap;
+    }
     //將矩陣轉成bitmap
     private Bitmap ArrayToBitmap(int[][] m_modeArray) {
         //設定bitmap尺寸
@@ -1120,8 +1198,8 @@ public class USChartActivity extends AppCompatActivity
         int[] DottedLine = new int[width * height];
         for (int i = 0; i < width; i++){
             if ((i/10)%2 == 0){
-                for(int j = tip; j < tip+1; j++){
-                    DottedLine[width * j + i] = (255 << 24) | (255 << 16) | (0 << 8) | 0;
+                for(int j = tip; j < tip+10; j++){
+                    DottedLine[width * j + i] = (50 << 24) | (255 << 16) | (0 << 8) | 0;
                 }
             }
             else{
@@ -1197,6 +1275,35 @@ public class USChartActivity extends AppCompatActivity
 
     }
 
+    private void TrackingSetup(){
+        Tracking.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (TrackingOn.get() == false) {
+                    TrackingOn.set(true);
+                    isTracking = true;
+                    Tracking.setTextColor(Color.rgb(255, 0, 0)); //儲存按鈕顏色變化（紅）
+                } else {
+                    TrackingOn.set(false);
+                    isTracking = false;
+                    Tracking.setTextColor(Color.rgb(0, 0, 0)); //儲存按鈕顏色變化（黑）
+                }
+            }
+        });
+    }
+
+    private double FindMaxloc(double[] array){
+        double max_value=0;
+        double max_value_loc=0;
+        int length = (int) Math.round(Depth / 6.16 * 1000);
+        for (int i = 150; i < length-100; i++) {
+            if (array[i] > max_value) {
+                max_value = array[i];
+                max_value_loc=i;
+            }
+        }
+        return max_value_loc;
+    }
 
 
 
